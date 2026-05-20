@@ -1,0 +1,180 @@
+# RuboCop — Clicksign Ruby SDK
+# Referência: https://docs.rubocop.org/rubocop/configuration.html
+
+inherit_mode:
+  merge:
+    - Exclude
+
+plugins:
+  - rubocop-rspec
+
+AllCops:
+  TargetRubyVersion: 3.0
+  NewCops: enable
+  SuggestExtensions: false
+  DisplayCopNames: true
+  CacheRootDirectory: tmp/rubocop_cache
+  Include:
+    - 'lib/**/*.rb'
+    - 'spec/**/*.rb'
+    - 'bin/**/*'
+    - 'clicksign-ruby-sdk.gemspec'
+  Exclude:
+    - 'tmp/**/*'
+    - 'vendor/**/*'
+    - 'spec/vcr_cassettes/**/*'
+
+# --- Layout -------------------------------------------------------------------
+
+Layout/LineLength:
+  Max: 90
+
+Layout/TrailingWhitespace:
+  Enabled: true
+
+# --- Lint ---------------------------------------------------------------------
+
+Lint/EmptyBlock:
+  Exclude:
+    - 'spec/**/*'
+
+Lint/RedundantDirGlobSort:
+  Enabled: true
+
+Lint/UselessAccessModifier:
+  ContextCreatingMethods:
+    - class_methods
+    - included
+
+# --- Metrics ------------------------------------------------------------------
+
+Metrics/MethodLength:
+  Max: 20
+  Exclude:
+    - 'spec/support/**/*'
+
+Metrics/ClassLength:
+  Max: 150
+
+Metrics/ModuleLength:
+  Exclude:
+    - 'spec/support/**/*'
+
+Metrics/ParameterLists:
+  Max: 5
+  CountKeywordArgs: true
+  Exclude:
+    - 'spec/support/**/*'
+
+Metrics/BlockLength:
+  Exclude:
+    - 'spec/**/*'
+
+Metrics/AbcSize:
+  Max: 20
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Metrics/PerceivedComplexity:
+  Max: 10
+
+# --- Naming -------------------------------------------------------------------
+
+Naming/MethodParameterName:
+  inherit_mode:
+    merge:
+      - AllowedNames
+  AllowedNames:
+    - op  # JSON:API atomic operations
+
+# --- Style --------------------------------------------------------------------
+
+Style/FrozenStringLiteralComment:
+  Enabled: true
+  EnforcedStyle: always
+
+Style/StringLiterals:
+  EnforcedStyle: single_quotes
+
+Style/StringLiteralsInInterpolation:
+  EnforcedStyle: single_quotes
+
+Style/Documentation:
+  Enabled: false
+
+Style/HashSyntax:
+  EnforcedStyle: ruby19
+  EnforcedShorthandSyntax: always
+
+Style/TrailingCommaInArguments:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/PercentLiteralDelimiters:
+  PreferredDelimiters:
+    default: ()
+    '%i': '[]'
+    '%I': '[]'
+    '%r': '{}'
+    '%w': '[]'
+    '%W': '[]'
+
+Style/RedundantFetchBlock:
+  Enabled: true
+
+Style/SafeNavigation:
+  Enabled: true
+
+# --- Bundler / Gemspec --------------------------------------------------------
+
+Bundler/GemComment:
+  Enabled: false
+
+Gemspec/DevelopmentDependencies:
+  Enabled: true
+
+Gemspec/RequireMFA:
+  Enabled: true
+
+# --- RSpec --------------------------------------------------------------------
+
+RSpec/DescribeClass:
+  Enabled: true
+
+RSpec/ExampleLength:
+  Max: 25
+  Exclude:
+    - 'spec/clicksign/resources/**/*'
+
+RSpec/MultipleExpectations:
+  Max: 8
+
+RSpec/MultipleMemoizedHelpers:
+  Max: 12
+
+RSpec/MultipleDescribes:
+  Enabled: false
+
+RSpec/ContextWording:
+  AllowedPatterns:
+    - '^nested\b'
+
+RSpec/NestedGroups:
+  Max: 5
+
+RSpec/SpecFilePathFormat:
+  CustomTransform:
+    BulkRequirement: bulk_requirement
+    SignatureWatcher: signature_watcher
+    AccessControlList: access_control_list
+    EnvelopeBulkCreation: envelope_bulk_creation
+    TemplateField: template_field
+
+RSpec/VerifiedDoubles:
+  Enabled: false

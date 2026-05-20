@@ -1,0 +1,162 @@
+# frozen_string_literal: true
+
+RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
+  include JsonApiFixtures
+
+  subject(:client) do
+    described_class.new(
+      api_key: 'test-token',
+      base_url: JsonApiFixtures::BASE_URL,
+    )
+  end
+
+  let(:path) { '/envelopes/env-id/bulk_requirements' }
+  let(:body) do
+    {
+      'atomic:operations' => [
+        {
+          'op' => 'add',
+          'data' => {
+            'type' => 'requirements',
+            'attributes' => { 'action' => 'agree', 'role' => 'sign' },
+            'relationships' => {
+              'signer' => { 'data' => { 'type' => 'signers', 'id' => 'signer-id' } },
+              'document' => { 'data' => { 'type' => 'documents',
+                                          'id' => 'document-id' } },
+            },
+          },
+        },
+      ],
+    }
+  end
+  let(:url) { "#{JsonApiFixtures::BASE_URL}#{path}" }
+
+  before do
+    stub_request(:post, url)
+      .to_return(
+        status: status,
+        body: response_body.to_json,
+        headers: { 'Content-Type' => 'application/json' },
+      )
+  end
+
+  describe '#post' do
+    context 'when response has atomic:results' do
+      let(:status) { 404 }
+      let(:response_body) do
+        { 'atomic:results' => [{ 'errors' => [{ 'detail' => 'not found' }] }] }
+      end
+
+      it 'returns parsed body without raising' do
+        expect(client.post(path, body: body)).to eq(response_body)
+      end
+
+      it 'sends JSON:API headers and authorization' do
+        client.post(path, body: body)
+
+        expect(WebMock).to have_requested(:post, url)
+          .with(
+            headers: {
+              'Content-Type' => 'application/vnd.api+json',
+              'Accept' => 'application/vnd.api+json',
+              'Authorization' => 'test-token',
+            },
+            body: body.to_json,
+          )
+      end
+    end
+
+    context 'when response is successful' do
+      let(:status) { 200 }
+      let(:response_body) do
+        { 'atomic:results' => [{ 'data' => {} }] }
+      end
+
+      it 'returns parsed body' do
+        expect(client.post(path, body: body)).to eq(response_body)
+      end
+    end
+
+    context 'when response has top-level errors only' do
+      let(:status) { 422 }
+      let(:response_body) do
+        { 'errors' => [{ 'detail' => 'envelope invalid' }] }
+      end
+
+      it 'raises ValidationError' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::ValidationError, 'envelope invalid')
+      end
+    end
+
+    context 'when response is an unhandled error' do
+      let(:status) { 500 }
+      let(:response_body) do
+        { 'errors' => [{ 'detail' => 'server error' }] }
+      end
+
+      it 'raises ServerError' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::ServerError)
+      end
+    end
+
+    context 'when response is unauthorized' do
+      let(:status) { 401 }
+      let(:response_body) do
+        { 'errors' => [{ 'detail' => 'Access Token inválido' }] }
+      end
+
+      it 'raises AuthenticationError' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::AuthenticationError)
+      end
+    end
+
+    context 'when response has no atomic:results and status is forbidden' do
+      let(:status) { 403 }
+      let(:response_body) do
+        { 'errors' => [{ 'detail' => 'forbidden' }] }
+      end
+
+      it 'raises AuthenticationError' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::AuthenticationError, 'forbidden')
+      end
+    end
+  end
+end
+
+RSpec.describe Clicksign do
+  include JsonApiFixtures
+
+  describe '.bulk_operations_client' do
+    before do
+      described_class.configure do |c|
+        c.api_key  = 'configured-token'
+        c.base_url = JsonApiFixtures::BASE_URL
+      end
+    end
+
+    it 'returns a BulkOperationsClient using configuration' do
+      client = described_class.bulk_operations_client
+
+      expect(client).to be_a(Clicksign::JsonApi::BulkOperationsClient)
+    end
+
+    it 'reuses the same instance' do
+      first = described_class.bulk_operations_client
+      second = described_class.bulk_operations_client
+
+      expect(second).to equal(first)
+    end
+
+    it 'resets the client when reset! is called' do
+      first = described_class.bulk_operations_client
+      described_class.reset!
+      second = described_class.bulk_operations_client
+
+      expect(second).not_to equal(first)
+    end
+  end
+end

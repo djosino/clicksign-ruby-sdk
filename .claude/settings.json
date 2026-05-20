@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(bundle:*)",
+      "Bash(gem:*)",
+      "Bash(rspec:*)",
+      "Bash(rubocop:*)",
+      "Bash(git:*)",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Read(~/**)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo \"$(date -Iseconds) $CLAUDE_TOOL_NAME\" >> .claude/exec.log"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "CLICKSIGN_API_BASE_URL": "https://sandbox.clicksign.com/api/v3"
+  }
+}
