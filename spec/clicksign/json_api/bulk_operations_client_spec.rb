@@ -194,9 +194,27 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
       expect(WebMock).to have_requested(:post, url).times(3)
     end
 
-    it 'sleeps with exponential backoff between retries' do
+    it 'sleeps with jittered exponential backoff between retries' do
       stub_request(:post, url).to_raise(Net::ReadTimeout)
+      slept = []
+      allow(retrying_client).to receive(:sleep) { |duration| slept << duration }
+
       expect { retrying_client.post(path, body: body) }.to raise_error(Clicksign::TimeoutError)
+
+      expect(slept.size).to eq(2)
+      expect(slept[0]).to be >= 0
+      expect(slept[0]).to be < Clicksign::RetryBackoff.ceiling(1)
+      expect(slept[1]).to be >= 0
+      expect(slept[1]).to be < Clicksign::RetryBackoff.ceiling(2)
+    end
+
+    it 'uses RetryBackoff.delay for the sleep duration' do
+      stub_request(:post, url).to_raise(Net::ReadTimeout)
+      allow(Clicksign::RetryBackoff).to receive(:delay).with(1).and_return(0.5)
+      allow(Clicksign::RetryBackoff).to receive(:delay).with(2).and_return(1.0)
+
+      expect { retrying_client.post(path, body: body) }.to raise_error(Clicksign::TimeoutError)
+
       expect(retrying_client).to have_received(:sleep).with(0.5).once
       expect(retrying_client).to have_received(:sleep).with(1.0).once
     end

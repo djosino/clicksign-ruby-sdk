@@ -134,7 +134,8 @@ RSpec.describe Clicksign::Resource do
           .to_return(status: 200, body: body.to_json, headers: json_headers)
 
         klass.include('owner', 'tags').to_a
-        expect(WebMock).to have_requested(:get, url).with(query: { 'include' => 'owner,tags' })
+        expect(WebMock).to have_requested(:get,
+                                          url).with(query: { 'include' => 'owner,tags' })
       end
 
       it 'returns a QueryProxy' do

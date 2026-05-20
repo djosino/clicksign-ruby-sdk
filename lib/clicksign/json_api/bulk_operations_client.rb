@@ -54,7 +54,7 @@ module Clicksign
         rescue Clicksign::TimeoutError => e
           raise unless e.retryable? && attempts <= @max_retries
 
-          sleep([0.5 * (2**(attempts - 1)), 30].min)
+          sleep(Clicksign::RetryBackoff.delay(attempts))
           retry
         end
       end

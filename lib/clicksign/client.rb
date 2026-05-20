@@ -68,7 +68,7 @@ module Clicksign
              Clicksign::ServerError => e
         raise unless e.retryable? && attempts <= @max_retries
 
-        delay = backoff_delay(attempts)
+        delay = RetryBackoff.delay(attempts)
         Instrumentation.publish(:retry, {
                                   method: request.method.downcase.to_sym,
                                   path: resource_path(uri),
@@ -134,10 +134,6 @@ module Clicksign
     def resource_path(uri)
       base = URI.parse(@base_url).path
       uri.path.delete_prefix(base)
-    end
-
-    def backoff_delay(attempt)
-      [0.5 * (2**(attempt - 1)), 30].min
     end
   end
 end

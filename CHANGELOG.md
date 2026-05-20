@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.3] — 2026-05-20
+
+### Added
+
+- `Clicksign::RetryBackoff` — backoff exponencial com **full jitter**, compartilhado por `Client` e `BulkOperationsClient`
+- `Configuration#logger` — log opcional de erros em callbacks de instrumentação
+- Arquivo `REVISION` como fonte única da versão da gem
+
+### Changed
+
+- `Clicksign::VERSION` lê de `REVISION` em vez de constante fixa no código
+- `Instrumentation#publish` emite `logger.warn` quando um callback falha e `config.logger` está definido (comportamento silencioso permanece o padrão)
+- README: seções de multi-conta (`Services`, `Client`), timeouts, retry, instrumentação e `environment`
+- README: retry documentado com full jitter; removida referência a VCR nos testes
+
+---
+
+## [0.1.2] — 2026-05-20
+
+### Added
+
+- Cobertura de testes ampliada na quarta passagem de revisão — resources, `QueryProxy` (auto-pagination), `Serializer`, `Client` (retry), `BulkOperationsClient` (timeout/retry), integração de `Instrumentation`
+- Specs para `Membership`, `TemplateField`, `AutoSignature::Term`, fluxos notariais (`Envelope`, `Document`, `Signer`, `Event`, `Requirement`) e demais resources sem cobertura dedicada
+
+### Changed
+
+- Padronização de estrutura dos specs (`describe`/`context`, agrupamento de exemplos)
+
+---
+
 ## [0.1.1] — 2026-05-20
 
 ### Fixed

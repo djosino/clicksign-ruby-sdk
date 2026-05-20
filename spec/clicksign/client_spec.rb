@@ -192,14 +192,33 @@ RSpec.describe Clicksign::Client do
       expect(WebMock).to have_requested(:post, url).times(1)
     end
 
-    it 'sleeps with exponential backoff between retries' do
+    it 'sleeps with jittered exponential backoff between retries' do
       stub_request(:get, url)
         .to_return(
           { status: 500, body: error_body, headers: json_headers },
           { status: 200, body: body.to_json, headers: json_headers },
         )
 
+      slept = []
+      allow(retrying_client).to receive(:sleep) { |duration| slept << duration }
+
       retrying_client.get(path)
+
+      expect(slept.size).to eq(1)
+      expect(slept.first).to be >= 0
+      expect(slept.first).to be < Clicksign::RetryBackoff.ceiling(1)
+    end
+
+    it 'uses RetryBackoff.delay for the sleep duration' do
+      stub_request(:get, url)
+        .to_return(
+          { status: 500, body: error_body, headers: json_headers },
+          { status: 200, body: body.to_json, headers: json_headers },
+        )
+      allow(Clicksign::RetryBackoff).to receive(:delay).with(1).and_return(0.5)
+
+      retrying_client.get(path)
+
       expect(retrying_client).to have_received(:sleep).with(0.5).once
     end
   end

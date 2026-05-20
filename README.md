@@ -17,6 +17,8 @@ Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.c
 
 - [Instalação](#instalação)
 - [Configuração](#configuração)
+- [Multi-conta e cliente instanciável](#multi-conta-e-cliente-instantiável)
+- [Timeouts, retry e instrumentação](#timeouts-retry-e-instrumentação)
 - [Início rápido](#início-rápido)
 - [Fluxo de assinatura (notarial)](#fluxo-de-assinatura-notarial)
 - [Filtros, ordenação e paginação](#filtros-ordenação-e-paginação)
@@ -56,26 +58,163 @@ gem install clicksign-ruby-sdk
 
 ## Configuração
 
-Configure a chave de API e a URL base **uma vez** no boot da aplicação (initializer, `config/initializers/clicksign.rb`, script, etc.):
+A forma mais simples é a configuração global no boot da aplicação (initializer, `config/initializers/clicksign.rb`, script, etc.):
 
 ```ruby
 require 'clicksign'
 
 Clicksign.configure do |c|
   c.api_key  = ENV.fetch('CLICKSIGN_API_KEY')
-  c.base_url = ENV.fetch('CLICKSIGN_API_BASE_URL', 'https://sandbox.clicksign.com/api/v3')
+  c.environment = :sandbox   # ou :production — define base_url automaticamente
+  # c.base_url = '...'      # opcional: sobrescreve o URL do ambiente
+  c.open_timeout  = 2       # segundos (padrão)
+  c.read_timeout  = 10
+  c.write_timeout = 10
+  c.max_retries   = 0       # retentativas automáticas (ver seção abaixo)
 end
 ```
+
+| Opção | Padrão | Descrição |
+|-------|--------|-----------|
+| `api_key` | — | Token da API (obrigatório) |
+| `environment` | — | `:sandbox` ou `:production` (atalho para `base_url`) |
+| `base_url` | produção | URL completa da API v3 |
+| `open_timeout` | `2` | Timeout de conexão (s) |
+| `read_timeout` | `10` | Timeout de leitura (s) |
+| `write_timeout` | `10` | Timeout de escrita (s) |
+| `max_retries` | `0` | Retentativas em erros transitórios |
 
 A API usa o header `Authorization: <seu-token>` **sem** o prefixo `Bearer`.
 
 > **Segurança:** não commite tokens no código. Use variáveis de ambiente ou cofre de secrets (Rails credentials, etc.).
+
+> **Multi-conta / multi-tenant:** se cada requisição pode usar credenciais diferentes (SaaS, workers por cliente), prefira [`Clicksign::Services`](#multi-conta-e-cliente-instantiável) em vez da config global.
 
 Para testar interativamente no console da gem:
 
 ```bash
 CLICKSIGN_API_KEY=seu-token bundle exec ruby bin/console
 ```
+
+---
+
+## Multi-conta e cliente instanciável
+
+Além da config global, a gem oferece clientes isolados por contexto — útil em apps multi-tenant, jobs Sidekiq com token por conta e testes paralelos.
+
+### `Clicksign::Services` (recomendado para resources)
+
+Encapsula um `Clicksign::Client` e roteia todas as chamadas de `Clicksign::Resources::*` dentro do bloco `use`:
+
+```ruby
+conta_a = Clicksign::Services.new(
+  api_key: ENV['CLICKSIGN_TOKEN_CONTA_A'],
+  environment: :production,
+  max_retries: 2
+)
+
+conta_b = Clicksign::Services.new(
+  api_key: ENV['CLICKSIGN_TOKEN_CONTA_B'],
+  environment: :sandbox
+)
+
+conta_a.use do
+  Clicksign::Resources::Notarial::Envelope.create(name: 'Contrato A')
+end
+
+conta_b.use do
+  Clicksign::Resources::Notarial::Envelope.filter(status: 'draft').to_a
+end
+```
+
+O client ativo fica em `Thread.current` durante o bloco; blocos aninhados restauram o client externo ao sair. Fora de `use`, os resources voltam a usar `Clicksign.client` (config global).
+
+Em Rails, um padrão comum é resolver o service no controller e executar a lógica dentro de `use`:
+
+```ruby
+class EnvelopesController < ApplicationController
+  def create
+    current_tenant.clicksign_service.use do
+      envelope = Clicksign::Resources::Notarial::Envelope.create(envelope_params)
+      render json: { id: envelope.id }
+    end
+  end
+end
+```
+
+### `Clicksign::Client` (HTTP direto)
+
+Para chamadas JSON:API de baixo nível sem passar pelos resources:
+
+```ruby
+client = Clicksign::Client.new(
+  api_key: ENV['CLICKSIGN_API_KEY'],
+  base_url: 'https://sandbox.clicksign.com/api/v3',
+  open_timeout: 2,
+  read_timeout: 30,
+  max_retries: 3
+)
+
+response = client.get('/envelopes', params: { 'filter[status]' => 'draft' })
+client.post('/envelopes', body: { data: { type: 'envelopes', attributes: { name: 'Novo' } } })
+```
+
+| Abordagem | Quando usar |
+|-----------|-------------|
+| `Clicksign.configure` | App single-tenant; initializer único |
+| `Clicksign::Services#use` | Multi-conta; token por request/job |
+| `Clicksign::Client.new` | Controle fino do HTTP ou integração customizada |
+
+---
+
+## Timeouts, retry e instrumentação
+
+### Timeouts
+
+Configuráveis globalmente (`Clicksign.configure`), por `Services` ou diretamente em `Client.new`. Timeouts de rede disparam `Clicksign::TimeoutError` (retryable quando `max_retries > 0`).
+
+### Retry automático
+
+Com `max_retries > 0`, o client reexecuta a requisição em erros **transitórios**:
+
+- `Clicksign::TimeoutError`
+- `Clicksign::RateLimitError`
+- `Clicksign::ServerError` (5xx)
+
+Backoff exponencial com **full jitter** (espera aleatória entre `0` e o teto da tentativa: `0,5s`, `1s`, `2s`… até **30s**), para evitar thundering herd quando muitos clientes falham ao mesmo tempo. Após esgotar as retentativas, a exceção original é relançada.
+
+```ruby
+Clicksign.configure do |c|
+  c.api_key     = ENV['CLICKSIGN_API_KEY']
+  c.environment = :production
+  c.max_retries = 3
+end
+```
+
+Operações em lote (`BulkRequirement`) usam o mesmo `max_retries` via `Clicksign.bulk_operations_client`.
+
+### Instrumentação
+
+Registre callbacks para observabilidade (logs, métricas, APM). Callbacks não propagam exceções — falhas internas são ignoradas para não afetar a requisição.
+
+```ruby
+Clicksign.on_request do |event|
+  # event: :method, :path, :status, :duration_ms, :attempt
+  Rails.logger.info "[Clicksign] #{event[:method]} #{event[:path]} → #{event[:status]} (#{event[:duration_ms]}ms)"
+end
+
+Clicksign.on_retry do |event|
+  # event: :method, :path, :attempt, :max_retries, :error, :wait_ms
+  Rails.logger.warn "[Clicksign] retry #{event[:attempt]}/#{event[:max_retries]} em #{event[:wait_ms]}ms"
+end
+
+Clicksign.on_error do |event|
+  # event: :method, :path, :error, :status, :duration_ms
+  Sentry.capture_exception(event[:error])
+end
+```
+
+Eventos publicados: `:request` (toda tentativa, sucesso ou erro HTTP), `:retry` (antes de cada retentativa), `:error` (quando uma exceção é lançada).
 
 ---
 
@@ -453,15 +592,22 @@ AccessControlList.destroy(folder_id: folder.id, group_id: group.id)
 
 Erros HTTP são convertidos em exceções antes de chegar ao seu código:
 
-| HTTP | Exceção |
-|------|---------|
-| 401, 403 | `Clicksign::AuthenticationError` |
-| 404 | `Clicksign::NotFoundError` |
-| 400, 422 | `Clicksign::ValidationError` |
-| 409 | `Clicksign::ConflictError` |
-| 429 | `Clicksign::RateLimitError` |
-| 5xx | `Clicksign::ServerError` |
-| Timeout / conexão | `Clicksign::TimeoutError` |
+| HTTP | Exceção | `retryable?` |
+|------|---------|--------------|
+| 401, 403 | `Clicksign::AuthenticationError` | não |
+| 404 | `Clicksign::NotFoundError` | não |
+| 400, 422 | `Clicksign::ValidationError` | não |
+| 409 | `Clicksign::ConflictError` | não |
+| 429 | `Clicksign::RateLimitError` | sim |
+| 5xx | `Clicksign::ServerError` | sim |
+| Timeout / conexão | `Clicksign::TimeoutError` | sim |
+
+Todas herdam de `Clicksign::Error` e expõem metadados úteis para debug:
+
+- `status_code` — código HTTP da resposta
+- `request_id` — quando enviado pela API
+- `response_body` — corpo JSON da resposta de erro
+- `response_headers` — headers da resposta (`RateLimitError` também expõe `rate_limit_remaining` e `rate_limit_reset`)
 
 Exemplo:
 
@@ -472,6 +618,9 @@ rescue Clicksign::NotFoundError
   puts 'Envelope não encontrado'
 rescue Clicksign::ValidationError => e
   puts "Dados inválidos: #{e.message}"
+  puts e.response_body
+rescue Clicksign::RateLimitError => e
+  puts "Aguarde reset em #{e.rate_limit_reset}" if e.retryable?
 rescue Clicksign::AuthenticationError
   puts 'Verifique CLICKSIGN_API_KEY'
 end
@@ -483,19 +632,27 @@ Operações em lote (`BulkRequirement`) podem retornar falhas **por slot** em `r
 
 ## Ambientes
 
-| Ambiente | `base_url` |
-|----------|------------|
-| Sandbox | `https://sandbox.clicksign.com/api/v3` |
-| Produção | `https://app.clicksign.com/api/v3` |
+| Ambiente | Símbolo | `base_url` |
+|----------|---------|------------|
+| Sandbox | `:sandbox` | `https://sandbox.clicksign.com/api/v3` |
+| Produção | `:production` | `https://app.clicksign.com/api/v3` |
 
-O padrão da gem em `Clicksign::Configuration` é produção (`app.clicksign.com`). Para desenvolvimento, defina explicitamente o sandbox:
+O padrão em `Clicksign::Configuration` é **produção**. Para desenvolvimento, use o atalho `environment` (equivalente a definir `base_url`):
 
 ```ruby
 Clicksign.configure do |c|
-  c.api_key  = ENV['CLICKSIGN_API_KEY']
-  c.base_url = 'https://sandbox.clicksign.com/api/v3'
+  c.api_key     = ENV['CLICKSIGN_API_KEY']
+  c.environment = :sandbox
 end
+
+# Ou em multi-conta:
+service = Clicksign::Services.new(
+  api_key: ENV['CLICKSIGN_API_KEY'],
+  environment: :sandbox
+)
 ```
+
+Também é possível passar `base_url` manualmente quando precisar de um endpoint customizado (proxy, mock, etc.).
 
 Gere tokens de API no painel da Clicksign do ambiente correspondente.
 
@@ -521,7 +678,11 @@ Estrutura relevante:
 
 ```
 lib/clicksign/
-  client.rb              # HTTP (GET, POST, PATCH, DELETE)
+  retry_backoff.rb       # Exponential backoff com full jitter
+  client.rb              # HTTP (GET, POST, PATCH, DELETE), retry, timeouts
+  services.rb            # Cliente por contexto (multi-conta via #use)
+  configuration.rb       # Config global, environment, timeouts, retry
+  instrumentation.rb     # Eventos :request, :retry, :error
   resource.rb            # CRUD base, filtros, nested lists
   resources/notarial/    # Envelope, Document, Signer, Requirement, ...
   json_api/              # Serializer, Parser, bulk operations

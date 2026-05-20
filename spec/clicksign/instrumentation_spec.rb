@@ -165,8 +165,9 @@ RSpec.describe 'Clicksign instrumentation integration' do
 
       expect(retries.size).to eq(1)
       expect(retries.first).to include(
-        method: :get, path: path, attempt: 1, max_retries: 1, wait_ms: 500,
+        method: :get, path: path, attempt: 1, max_retries: 1,
       )
+      expect(retries.first[:wait_ms]).to be_between(0, 500)
       expect(retries.first[:error]).to be_a(Clicksign::ServerError)
     end
 
