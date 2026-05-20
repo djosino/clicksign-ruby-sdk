@@ -62,7 +62,7 @@ Metrics/ModuleLength:
 
 Metrics/ParameterLists:
   Max: 5
-  CountKeywordArgs: true
+  CountKeywordArgs: false
   Exclude:
     - 'spec/support/**/*'
 
@@ -80,6 +80,10 @@ Metrics/PerceivedComplexity:
   Max: 10
 
 # --- Naming -------------------------------------------------------------------
+
+Naming/PredicateMethod:
+  AllowedMethods:
+    - verify_signature!
 
 Naming/MethodParameterName:
   inherit_mode:
@@ -146,6 +150,8 @@ Gemspec/RequireMFA:
 
 RSpec/DescribeClass:
   Enabled: true
+  Exclude:
+    - 'spec/clicksign/instrumentation_spec.rb'
 
 RSpec/ExampleLength:
   Max: 25

@@ -7,11 +7,11 @@ module Clicksign
     DIGEST = 'sha256'
 
     # Raises WebhookSignatureError if the Content-HMAC header does not match.
-    def self.verify_signature!(payload, signature, secret:) # rubocop:disable Naming/PredicateMethod
+    def self.verify_signature!(payload, signature, secret:)
       expected = compute_signature(payload, secret: secret)
-      unless secure_compare(expected, signature)
-        raise WebhookSignatureError, 'Webhook signature mismatch'
-      end
+      raise WebhookSignatureError, 'Webhook signature mismatch' unless secure_compare?(
+        expected, signature
+      )
 
       true
     end
@@ -29,13 +29,13 @@ module Clicksign
     end
 
     # Constant-time comparison to prevent timing attacks.
-    def self.secure_compare(str_a, str_b) # rubocop:disable Naming/PredicateMethod
+    def self.secure_compare?(str_a, str_b)
       digest_a = OpenSSL::Digest::SHA256.hexdigest(str_a)
       digest_b = OpenSSL::Digest::SHA256.hexdigest(str_b)
       result = 0
       digest_a.bytes.zip(digest_b.bytes) { |x, y| result |= x ^ y }
       result.zero?
     end
-    private_class_method :secure_compare
+    private_class_method :secure_compare?
   end
 end

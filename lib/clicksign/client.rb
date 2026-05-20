@@ -11,7 +11,7 @@ module Clicksign
       'Accept' => 'application/vnd.api+json',
     }.freeze
 
-    def initialize(api_key:, base_url:, open_timeout: 2, read_timeout: 10, # rubocop:disable Metrics/ParameterLists
+    def initialize(api_key:, base_url:, open_timeout: 2, read_timeout: 10,
                    write_timeout: 10, max_retries: 0)
       @api_key       = api_key
       @base_url      = base_url
@@ -82,53 +82,49 @@ module Clicksign
       end
     end
 
-    def execute_once(request, uri, attempt: 1) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
-      start  = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      method = request.method.downcase.to_sym
-      path   = resource_path(uri)
+    def execute_once(request, uri, attempt: 1)
+      start    = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      ctx      = { method: request.method.downcase.to_sym, path: resource_path(uri),
+                   attempt: attempt }
+      response = http_request(request, uri)
+      handle_response(response, ctx, start)
+    rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
+      handle_network_error(e, ctx, elapsed_ms(start))
+    end
 
-      response = Net::HTTP.start(uri.host, uri.port,
-                                 use_ssl: uri.scheme == 'https',
-                                 open_timeout: @open_timeout,
-                                 read_timeout: @read_timeout,
-                                 write_timeout: @write_timeout,
-                                 &proc { |http| http.request(request) })
+    def http_request(request, uri)
+      Net::HTTP.start(uri.host, uri.port,
+                      use_ssl: uri.scheme == 'https',
+                      open_timeout: @open_timeout,
+                      read_timeout: @read_timeout,
+                      write_timeout: @write_timeout,
+                      &proc { |http| http.request(request) })
+    end
+
+    def handle_response(response, ctx, start)
       duration = elapsed_ms(start)
-
+      status   = response.code.to_i
       begin
         ErrorHandler.call(response)
       rescue Error => e
-        Instrumentation.publish(:request,
-                                request_payload(method, path, response.code.to_i,
-                                                duration, attempt))
-        Instrumentation.publish(:error,
-                                error_payload(method, path, e, response.code.to_i,
-                                              duration, attempt))
+        publish_event(:request, ctx, status: status, duration_ms: duration)
+        publish_event(:error, ctx, error: e, status: status, duration_ms: duration)
         raise
       end
-
-      Instrumentation.publish(:request,
-                              request_payload(method, path, response.code.to_i, duration,
-                                              attempt))
+      publish_event(:request, ctx, status: status, duration_ms: duration)
       return nil if response.body.nil? || response.body.empty?
 
       JSON.parse(response.body)
-    rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
-      duration = elapsed_ms(start)
-      err = TimeoutError.new(e.message)
-      Instrumentation.publish(:error,
-                              error_payload(method, path, err, nil, duration, attempt))
-      raise err, e.message, e.backtrace
     end
 
-    def request_payload(method, path, status, duration_ms, attempt)
-      { method: method, path: path, status: status, duration_ms: duration_ms,
-        attempt: attempt }
+    def handle_network_error(error, ctx, duration)
+      err = TimeoutError.new(error.message)
+      publish_event(:error, ctx, error: err, status: nil, duration_ms: duration)
+      raise err, error.message, error.backtrace
     end
 
-    def error_payload(method, path, error, status, duration_ms, attempt) # rubocop:disable Metrics/ParameterLists
-      { method: method, path: path, error: error, status: status,
-        duration_ms: duration_ms, attempt: attempt }
+    def publish_event(type, ctx, extra)
+      Instrumentation.publish(type, ctx.merge(extra))
     end
 
     def elapsed_ms(start)

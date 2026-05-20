@@ -40,7 +40,7 @@ RSpec.describe Clicksign::Instrumentation do
   end
 end
 
-RSpec.describe 'Clicksign instrumentation integration' do # rubocop:disable RSpec/DescribeClass
+RSpec.describe 'Clicksign instrumentation integration' do
   include JsonApiFixtures
 
   subject(:client) do

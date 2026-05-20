@@ -12,7 +12,7 @@ module Clicksign
         'Accept' => 'application/vnd.api+json',
       }.freeze
 
-      def initialize(api_key:, base_url:, open_timeout: 2, read_timeout: 10, # rubocop:disable Metrics/ParameterLists
+      def initialize(api_key:, base_url:, open_timeout: 2, read_timeout: 10,
                      write_timeout: 10, max_retries: 0)
         @api_key       = api_key
         @base_url      = base_url
