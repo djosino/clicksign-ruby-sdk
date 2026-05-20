@@ -203,6 +203,27 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
       instance.notify(message: 'Please sign')
       expect(WebMock).to have_requested(:post, notifications_url)
     end
+
+    it 'includes email_customization in the request body when provided' do
+      described_class.notify(signer_id, envelope_id: envelope_id,
+                                        message: 'Please sign',
+                                        subject: 'Sign now', body: 'Hello')
+
+      expect(WebMock).to(have_requested(:post, notifications_url).with do |req|
+        attrs = JSON.parse(req.body).dig('data', 'attributes')
+        attrs['email_customization'] == { 'subject' => 'Sign now', 'body' => 'Hello' }
+      end)
+    end
+
+    it 'omits email_customization when no kwargs given' do
+      described_class.notify(signer_id, envelope_id: envelope_id,
+                                        message: 'Please sign')
+
+      expect(WebMock).to(have_requested(:post, notifications_url).with do |req|
+        attrs = JSON.parse(req.body).dig('data', 'attributes')
+        !attrs.key?('email_customization')
+      end)
+    end
   end
 
   describe '#envelope_id' do

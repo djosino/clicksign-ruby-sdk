@@ -169,6 +169,20 @@ RSpec.describe Clicksign::Client do
       expect(WebMock).to have_requested(:get, url).times(3) # 1 + 2 retries
     end
 
+    it 'retries on 429 RateLimitError and succeeds' do
+      rate_limit_body = { errors: [{ detail: 'rate limit exceeded' }] }.to_json
+
+      stub_request(:get, url)
+        .to_return(
+          { status: 429, body: rate_limit_body, headers: json_headers },
+          { status: 200, body: body.to_json, headers: json_headers },
+        )
+
+      result = retrying_client.get(path)
+      expect(result).to eq(body)
+      expect(WebMock).to have_requested(:get, url).twice
+    end
+
     it 'does not retry on 422 ValidationError' do
       stub_request(:post, url)
         .to_return(status: 422, body: error_body, headers: json_headers)

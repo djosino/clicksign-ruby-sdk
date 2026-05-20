@@ -174,5 +174,39 @@ RSpec.describe 'Clicksign instrumentation integration' do
       client.get(path)
       expect(received).to include(method: :get, status: 200)
     end
+
+    it 'on_retry fires when the client retries a failed request' do
+      retrying_client = Clicksign::Client.new(
+        api_key: 'tok',
+        base_url: JsonApiFixtures::BASE_URL,
+        max_retries: 1,
+      )
+      allow(retrying_client).to receive(:sleep)
+
+      stub_request(:get, url)
+        .to_return(
+          { status: 500, body: error_body, headers: json_headers },
+          { status: 200, body: body.to_json, headers: json_headers },
+        )
+
+      retry_events = []
+      Clicksign.on_retry { |e| retry_events << e }
+
+      retrying_client.get(path)
+      expect(retry_events.length).to eq(1)
+      expect(retry_events.first).to include(attempt: 1)
+    end
+
+    it 'on_error fires when the request raises an error' do
+      stub_request(:get, url)
+        .to_return(status: 500, body: error_body, headers: json_headers)
+
+      error_events = []
+      Clicksign.on_error { |e| error_events << e }
+
+      expect { client.get(path) }.to raise_error(Clicksign::ServerError)
+      expect(error_events.length).to eq(1)
+      expect(error_events.first).to include(method: :get, status: 500)
+    end
   end
 end

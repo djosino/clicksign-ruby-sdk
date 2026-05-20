@@ -20,6 +20,16 @@ RSpec.describe Clicksign::Resources::Membership do
     )
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('memberships')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/memberships')
+    end
+  end
+
   describe '.list' do
     subject(:memberships) { described_class.list }
 

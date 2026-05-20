@@ -13,6 +13,16 @@ RSpec.describe Clicksign::Resources::Group do
     group_data(id: 'g2222222-2222-2222-2222-222222222222', name: 'Members')
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('groups')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/groups')
+    end
+  end
+
   describe '.list' do
     subject(:groups) { described_class.list }
 
@@ -178,6 +188,22 @@ RSpec.describe Clicksign::Resources::Group do
 
       expect(WebMock).to(have_requested(:delete, relationship_url).with do |req|
         JSON.parse(req.body)['data'].first['id'] == user_id
+      end)
+    end
+
+    it '.add_users with empty array posts an empty data array' do
+      described_class.add_users(group_id, [])
+
+      expect(WebMock).to(have_requested(:post, relationship_url).with do |req|
+        JSON.parse(req.body)['data'] == []
+      end)
+    end
+
+    it '.remove_users with empty array sends DELETE with empty data array' do
+      described_class.remove_users(group_id, [])
+
+      expect(WebMock).to(have_requested(:delete, relationship_url).with do |req|
+        JSON.parse(req.body)['data'] == []
       end)
     end
   end

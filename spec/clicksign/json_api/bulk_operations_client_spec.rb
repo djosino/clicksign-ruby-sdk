@@ -166,10 +166,6 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
     it 'retries on timeout and succeeds on subsequent attempt' do
       success_body = { 'atomic:results' => [{ 'data' => {} }] }
       stub_request(:post, url)
-        .to_return(
-          { status: 200, body: 'not-json', headers: {} },
-        )
-      stub_request(:post, url)
         .to_raise(Net::ReadTimeout)
         .to_return(status: 200, body: success_body.to_json,
                    headers: { 'Content-Type' => 'application/json' })
@@ -177,6 +173,18 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
       result = retrying_client.post(path, body: body)
       expect(result).to eq(success_body)
       expect(WebMock).to have_requested(:post, url).twice
+    end
+
+    it 'does not retry on ServerError (500) — only timeouts are retried' do
+      error_body = { 'errors' => [{ 'detail' => 'server error' }] }.to_json
+
+      stub_request(:post, url)
+        .to_return(status: 500, body: error_body,
+                   headers: { 'Content-Type' => 'application/json' })
+
+      expect { retrying_client.post(path, body: body) }
+        .to raise_error(Clicksign::ServerError)
+      expect(WebMock).to have_requested(:post, url).once
     end
 
     it 'raises after exhausting max_retries' do

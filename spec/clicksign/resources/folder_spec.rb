@@ -18,6 +18,16 @@ RSpec.describe Clicksign::Resources::Folder do
                 path: '/Root Folder', in_root: false)
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('folders')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/folders')
+    end
+  end
+
   describe '.list' do
     subject(:folders) { described_class.list }
 

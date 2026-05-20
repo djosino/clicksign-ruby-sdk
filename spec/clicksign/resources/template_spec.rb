@@ -18,6 +18,16 @@ RSpec.describe Clicksign::Resources::Template do
     template_data(id: second_template_id, name: 'Other Template', color: '#fccf00')
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('templates')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/templates')
+    end
+  end
+
   describe '.list' do
     subject(:templates) { described_class.list }
 

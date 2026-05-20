@@ -27,6 +27,16 @@ RSpec.describe Clicksign::Resources::User do
     )
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('users')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/users')
+    end
+  end
+
   describe '.list' do
     subject(:users) { described_class.list }
 
