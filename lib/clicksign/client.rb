@@ -63,30 +63,81 @@ module Clicksign
       attempts = 0
       begin
         attempts += 1
-        execute_once(request, uri)
+        execute_once(request, uri, attempt: attempts)
       rescue Clicksign::TimeoutError, Clicksign::RateLimitError,
              Clicksign::ServerError => e
         raise unless e.retryable? && attempts <= @max_retries
 
-        sleep(backoff_delay(attempts))
+        delay = backoff_delay(attempts)
+        Instrumentation.publish(:retry, {
+                                  method: request.method.downcase.to_sym,
+                                  path: resource_path(uri),
+                                  attempt: attempts,
+                                  max_retries: @max_retries,
+                                  error: e,
+                                  wait_ms: (delay * 1000).round,
+                                })
+        sleep(delay)
         retry
       end
     end
 
-    def execute_once(request, uri)
-      Net::HTTP.start(uri.host, uri.port,
-                      use_ssl: uri.scheme == 'https',
-                      open_timeout: @open_timeout,
-                      read_timeout: @read_timeout,
-                      write_timeout: @write_timeout) do |http|
-        response = http.request(request)
-        ErrorHandler.call(response)
-        return nil if response.body.nil? || response.body.empty?
+    def execute_once(request, uri, attempt: 1) # rubocop:disable Metrics/MethodLength,Metrics/AbcSize
+      start  = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      method = request.method.downcase.to_sym
+      path   = resource_path(uri)
 
-        JSON.parse(response.body)
+      response = Net::HTTP.start(uri.host, uri.port,
+                                 use_ssl: uri.scheme == 'https',
+                                 open_timeout: @open_timeout,
+                                 read_timeout: @read_timeout,
+                                 write_timeout: @write_timeout,
+                                 &proc { |http| http.request(request) })
+      duration = elapsed_ms(start)
+
+      begin
+        ErrorHandler.call(response)
+      rescue Error => e
+        Instrumentation.publish(:request,
+                                request_payload(method, path, response.code.to_i,
+                                                duration, attempt))
+        Instrumentation.publish(:error,
+                                error_payload(method, path, e, response.code.to_i,
+                                              duration, attempt))
+        raise
       end
+
+      Instrumentation.publish(:request,
+                              request_payload(method, path, response.code.to_i, duration,
+                                              attempt))
+      return nil if response.body.nil? || response.body.empty?
+
+      JSON.parse(response.body)
     rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
-      raise TimeoutError, e.message, e.backtrace
+      duration = elapsed_ms(start)
+      err = TimeoutError.new(e.message)
+      Instrumentation.publish(:error,
+                              error_payload(method, path, err, nil, duration, attempt))
+      raise err, e.message, e.backtrace
+    end
+
+    def request_payload(method, path, status, duration_ms, attempt)
+      { method: method, path: path, status: status, duration_ms: duration_ms,
+        attempt: attempt }
+    end
+
+    def error_payload(method, path, error, status, duration_ms, attempt) # rubocop:disable Metrics/ParameterLists
+      { method: method, path: path, error: error, status: status,
+        duration_ms: duration_ms, attempt: attempt }
+    end
+
+    def elapsed_ms(start)
+      ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round(1)
+    end
+
+    def resource_path(uri)
+      base = URI.parse(@base_url).path
+      uri.path.delete_prefix(base)
     end
 
     def backoff_delay(attempt)

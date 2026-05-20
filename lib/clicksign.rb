@@ -8,6 +8,7 @@ require_relative 'clicksign/version'
 require_relative 'clicksign/configuration'
 require_relative 'clicksign/errors'
 require_relative 'clicksign/error_handler'
+require_relative 'clicksign/instrumentation'
 require_relative 'clicksign/webhook'
 require_relative 'clicksign/json_api/query_builder'
 require_relative 'clicksign/json_api/serializer'
@@ -59,10 +60,14 @@ module Clicksign
       )
     end
 
+    def on_request(&block) = Instrumentation.on(:request, &block)
+    def on_retry(&block)   = Instrumentation.on(:retry, &block)
+    def on_error(&block)   = Instrumentation.on(:error, &block)
+
     def reset!
-      @configuration = nil
-      @client                  = nil
-      @bulk_operations_client  = nil
+      @configuration          = nil
+      @client                 = nil
+      @bulk_operations_client = nil
     end
   end
 end
