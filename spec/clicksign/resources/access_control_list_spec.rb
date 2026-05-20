@@ -7,8 +7,10 @@ RSpec.describe Clicksign::Resources::AccessControlList do
   let(:group_id) { '22222222-2222-2222-2222-222222222222' }
   let(:acl_url) { "#{JsonApiFixtures::BASE_URL}/access_control_lists" }
 
-  it 'is defined with the correct resource type' do
-    expect(described_class.resource_type).to eq('access_control_lists')
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('access_control_lists')
+    end
   end
 
   describe '.create' do

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.1] — 2026-05-20
+
+### Fixed
+
+- `BulkOperationsClient#execute_with_retry`: retry logic era código morto — corrigido extraindo `safe_http_post`
+- `BulkOperationsClient#parse_response_body`: `JSON::ParserError` não era capturado para body inválido
+- `ErrorHandler#extract_message`: `JSON.parse(nil)` levantava `TypeError` quando body é nil/vazio
+- `Instrumentation#publish`: exceção em callback propagava para a requisição — agora isolada
+- `Resource#[]`: safe navigation `&.[]` evita `NoMethodError` antes de `load_data`
+- `AtomicResultsParser.parse`: `raw ||= {}` evita `NoMethodError` quando recebe nil
+
+### Changed
+
+- `BulkOperationsClient` retry agora funciona corretamente para timeouts de rede
+- `QueryBuilder#filter` aceita `false` como valor; `#fields` aceita string além de array
+- `requirement_list_spec.rb` consolidado em `requirement_spec.rb`
+
+---
+
 ## [0.1.0] — 2026-05-20
 
 ### Added

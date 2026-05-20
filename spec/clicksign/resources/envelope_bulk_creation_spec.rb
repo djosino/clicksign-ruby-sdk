@@ -26,12 +26,14 @@ RSpec.describe Clicksign::Resources::EnvelopeBulkCreation do
     }
   end
 
-  it 'is defined with the correct resource type' do
-    expect(described_class.resource_type).to eq('envelope_bulk_creations')
-  end
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('envelope_bulk_creations')
+    end
 
-  it 'has the correct endpoint' do
-    expect(described_class.endpoint).to eq('/envelope_bulk_creations')
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/envelope_bulk_creations')
+    end
   end
 
   describe '.create' do

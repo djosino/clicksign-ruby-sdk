@@ -7,12 +7,14 @@ RSpec.describe Clicksign::Resources::AutoSignature::Term do
   let(:signer_id) { '11111111-1111-1111-1111-111111111111' }
   let(:term_id)   { 'tttttttt-tttt-tttt-tttt-tttttttttttt' }
 
-  it 'has the correct resource type' do
-    expect(described_class.resource_type).to eq('auto_signature_terms')
-  end
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('auto_signature_terms')
+    end
 
-  it 'has the correct endpoint' do
-    expect(described_class.endpoint).to eq('/auto_signature/terms')
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/auto_signature/terms')
+    end
   end
 
   describe '.create' do
