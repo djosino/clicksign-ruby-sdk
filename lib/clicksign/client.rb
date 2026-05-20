@@ -83,13 +83,13 @@ module Clicksign
     end
 
     def execute_once(request, uri, attempt: 1)
-      start    = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      ctx      = { method: request.method.downcase.to_sym, path: resource_path(uri),
-                   attempt: attempt }
+      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      context = { method: request.method.downcase.to_sym, path: resource_path(uri),
+                  attempt: attempt }
       response = http_request(request, uri)
-      handle_response(response, ctx, start)
+      handle_response(response, context, start)
     rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
-      handle_network_error(e, ctx, elapsed_ms(start))
+      handle_network_error(e, context, elapsed_ms(start))
     end
 
     def http_request(request, uri)
@@ -101,30 +101,30 @@ module Clicksign
                       &proc { |http| http.request(request) })
     end
 
-    def handle_response(response, ctx, start)
+    def handle_response(response, context, start)
       duration = elapsed_ms(start)
       status   = response.code.to_i
       begin
         ErrorHandler.call(response)
       rescue Error => e
-        publish_event(:request, ctx, status: status, duration_ms: duration)
-        publish_event(:error, ctx, error: e, status: status, duration_ms: duration)
+        publish_event(:request, context, status: status, duration_ms: duration)
+        publish_event(:error, context, error: e, status: status, duration_ms: duration)
         raise
       end
-      publish_event(:request, ctx, status: status, duration_ms: duration)
+      publish_event(:request, context, status: status, duration_ms: duration)
       return nil if response.body.nil? || response.body.empty?
 
       JSON.parse(response.body)
     end
 
-    def handle_network_error(error, ctx, duration)
+    def handle_network_error(error, context, duration)
       err = TimeoutError.new(error.message)
-      publish_event(:error, ctx, error: err, status: nil, duration_ms: duration)
+      publish_event(:error, context, error: err, status: nil, duration_ms: duration)
       raise err, error.message, error.backtrace
     end
 
-    def publish_event(type, ctx, extra)
-      Instrumentation.publish(type, ctx.merge(extra))
+    def publish_event(type, context, extra)
+      Instrumentation.publish(type, context.merge(extra))
     end
 
     def elapsed_ms(start)
