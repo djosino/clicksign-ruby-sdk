@@ -1,0 +1,11 @@
+tmp/
+
+.env
+.env.*
+Gemfile.lock
+spec/vcr_cassettes/
+.claude/settings.local.json
+.claude/commands/
+.claude/exec.log
+.idea/
+*.gem

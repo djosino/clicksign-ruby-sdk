@@ -1,0 +1,40 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require 'bundler/setup'
+require 'dotenv/load'
+require 'clicksign'
+
+Clicksign.configure do |c|
+  c.api_key  = ENV.fetch('CLICKSIGN_API_KEY')
+  c.base_url = ENV.fetch('CLICKSIGN_API_BASE_URL', 'https://sandbox.clicksign.com/api/v3')
+end
+
+Envelope         = Clicksign::Resources::Notarial::Envelope
+Document         = Clicksign::Resources::Notarial::Document
+Signer           = Clicksign::Resources::Notarial::Signer
+Requirement      = Clicksign::Resources::Notarial::Requirement
+Event            = Clicksign::Resources::Notarial::Event
+SignatureWatcher = Clicksign::Resources::Notarial::SignatureWatcher
+BulkRequirement      = Clicksign::Resources::Notarial::BulkRequirement
+Webhook              = Clicksign::Resources::Webhook
+Folder               = Clicksign::Resources::Folder
+Template             = Clicksign::Resources::Template
+TemplateField        = Clicksign::Resources::TemplateField
+User                 = Clicksign::Resources::User
+Membership           = Clicksign::Resources::Membership
+Group                = Clicksign::Resources::Group
+EnvelopeBulkCreation = Clicksign::Resources::EnvelopeBulkCreation
+AccessControlList    = Clicksign::Resources::AccessControlList
+AutoSignatureTerm    = Clicksign::Resources::AutoSignature::Term
+AcceptanceWhatsapp   = Clicksign::Resources::AcceptanceTerm::Whatsapp
+
+puts "Clicksign SDK #{Clicksign::VERSION} — sandbox: #{Clicksign.configuration.base_url}"
+puts 'Notarial: Envelope, Document, Signer, Requirement, Event,'
+puts '          SignatureWatcher, BulkRequirement'
+puts 'Other:    Webhook, Folder, Template, TemplateField, User, Membership, Group'
+puts 'Special:  EnvelopeBulkCreation, AccessControlList,'
+puts '          AutoSignatureTerm, AcceptanceWhatsapp'
+
+require 'irb'
+IRB.start(__FILE__)
