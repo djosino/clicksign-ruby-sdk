@@ -13,4 +13,8 @@ RSpec.configure do |config|
   config.before do
     Clicksign.reset!
   end
+
+  config.after do
+    Clicksign::Instrumentation.clear
+  end
 end

@@ -29,9 +29,9 @@ module Clicksign
     end
 
     # Constant-time comparison to prevent timing attacks.
-    def self.secure_compare?(str_a, str_b)
-      digest_a = OpenSSL::Digest::SHA256.hexdigest(str_a)
-      digest_b = OpenSSL::Digest::SHA256.hexdigest(str_b)
+    def self.secure_compare?(expected, actual)
+      digest_a = OpenSSL::Digest::SHA256.hexdigest(expected)
+      digest_b = OpenSSL::Digest::SHA256.hexdigest(actual)
       result = 0
       digest_a.bytes.zip(digest_b.bytes) { |x, y| result |= x ^ y }
       result.zero?

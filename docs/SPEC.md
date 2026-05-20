@@ -47,7 +47,7 @@ O **Clicksign Ruby SDK** é uma gem Ruby que expõe a API REST da Clicksign de f
                             │
               ┌─────────────┴─────────────┐
               │    Clicksign::Resource    │
-              │  (base: json_api_client)  │
+              │  (base: Net::HTTP, CRUD)  │
               └─────────────┬─────────────┘
                             │
               ┌─────────────┴─────────────┐
@@ -67,8 +67,8 @@ O **Clicksign Ruby SDK** é uma gem Ruby que expõe a API REST da Clicksign de f
 | **Ponto de entrada** | `require 'clicksign'`, config global | `lib/clicksign.rb` |
 | **Configuração** | `api_key`, `base_url` | `lib/clicksign/configuration.rb` |
 | **Resources** | Um resource por entidade da API | `lib/clicksign/resources/**` |
-| **Base resource** | Métodos CRUD, `with_error_handling`, `raise_if_invalid` | `lib/clicksign/resource.rb` |
-| **Parser** | Deserialização JSON:API, filtra `included` sem `type` | `lib/clicksign/parser.rb` |
+| **Base resource** | Métodos CRUD, QueryProxy, auto-paginação, `method_missing` para atributos | `lib/clicksign/resource.rb` |
+| **Parser** | Deserialização JSON:API, filtra `included` sem `type` | `lib/clicksign/json_api/parser.rb` |
 | **Bulk operations** | POST atomic (`atomic:operations` / `atomic:results`) | `lib/clicksign/json_api/bulk_operations_client.rb` |
 | **Erros** | Hierarquia de exceções mapeadas de HTTP | `lib/clicksign/errors.rb` |
 
@@ -90,7 +90,7 @@ end
 | **Ruby** | Linguagem (>= 3.0) |
 | **Net::HTTP** | Transporte HTTP (stdlib) |
 | **JSON** | Serialização/deserialização (stdlib) |
-| **RSpec + VCR + WebMock** | Testes com gravação de cassettes |
+| **RSpec + WebMock** | Testes com stubs HTTP (sem VCR, sem rede real) |
 
 ---
 
@@ -437,34 +437,17 @@ module Clicksign
   module Resources
     module Notarial
       class Envelope < Clicksign::Resource
-        def self.list(**filters)
-          with_error_handling { where(filters).to_a }
+        self.resource_type = 'envelopes'
+
+        # Relacionamentos via relationships hash
+        def folder_id
+          relationships.dig('folder', 'data', 'id')
         end
 
-        def self.retrieve(id)
-          with_error_handling { find(id).first }
-        end
-
-        def self.create(**attributes)
-          with_error_handling do
-            resource = new(attributes)
-            resource.save
-            raise_if_invalid(resource)
-            resource
-          end
-        end
-
-        def update(**attributes)
-          with_error_handling do
-            attributes.each { |k, v| send(:"#{k}=", v) }
-            save
-            raise_if_invalid(self)
-            self
-          end
-        end
-
-        def delete
-          with_error_handling { destroy }
+        # Criar com relacionamento
+        def self.create(folder_id: nil, **attributes)
+          rels = folder_id ? { folder: { data: { type: 'folders', id: folder_id } } } : {}
+          super(**attributes, relationships: rels)
         end
       end
     end
