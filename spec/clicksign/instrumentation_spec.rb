@@ -40,6 +40,33 @@ RSpec.describe Clicksign::Instrumentation do
       described_class.publish(:request, {})
       expect(second_called).to be(true)
     end
+
+    context 'when config.logger is set' do
+      let(:logger) { double('Logger', warn: nil) }
+
+      before do
+        Clicksign.configure do |c|
+          c.api_key  = 'tok'
+          c.base_url = JsonApiFixtures::BASE_URL
+          c.logger   = logger
+        end
+      end
+
+      it 'logs callback errors via logger.warn' do
+        described_class.on(:request) { raise 'boom' }
+        described_class.publish(:request, {})
+
+        expect(logger).to have_received(:warn)
+          .with(a_string_matching(/instrumentation callback error.*request.*boom/))
+      end
+    end
+
+    context 'when config.logger is nil (default)' do
+      it 'silently ignores callback errors' do
+        described_class.on(:request) { raise 'silent error' }
+        expect { described_class.publish(:request, {}) }.not_to raise_error
+      end
+    end
   end
 
   describe '.clear' do

@@ -18,8 +18,11 @@ module Clicksign
       def publish(event, payload)
         @callbacks[event].each do |cb|
           cb.call(payload)
-        rescue StandardError
-          # Callbacks must not affect the request — errors are silently ignored.
+        rescue StandardError => e
+          Clicksign.configuration.logger&.warn(
+            "[Clicksign] instrumentation callback error (#{event}): " \
+            "#{e.class}: #{e.message}",
+          )
         end
       end
 

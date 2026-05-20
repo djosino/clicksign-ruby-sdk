@@ -8,7 +8,7 @@ module Clicksign
     }.freeze
 
     attr_accessor :api_key, :base_url, :open_timeout, :read_timeout,
-                  :write_timeout, :max_retries
+                  :write_timeout, :max_retries, :logger
 
     def initialize
       @base_url      = 'https://app.clicksign.com/api/v3'

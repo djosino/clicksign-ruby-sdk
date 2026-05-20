@@ -27,6 +27,10 @@ RSpec.describe Clicksign::Configuration do
     it 'sets max_retries to 0' do
       expect(config.max_retries).to eq(0)
     end
+
+    it 'leaves logger nil' do
+      expect(config.logger).to be_nil
+    end
   end
 
   describe 'setters' do
@@ -52,6 +56,12 @@ RSpec.describe Clicksign::Configuration do
     it 'accepts max_retries' do
       config.max_retries = 3
       expect(config.max_retries).to eq(3)
+    end
+
+    it 'accepts a logger' do
+      logger = double('Logger', warn: nil)
+      config.logger = logger
+      expect(config.logger).to be(logger)
     end
   end
 
