@@ -31,16 +31,16 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
   end
   let(:url) { "#{JsonApiFixtures::BASE_URL}#{path}" }
 
-  before do
-    stub_request(:post, url)
-      .to_return(
-        status: status,
-        body: response_body.to_json,
-        headers: { 'Content-Type' => 'application/json' },
-      )
-  end
-
   describe '#post' do
+    before do
+      stub_request(:post, url)
+        .to_return(
+          status: status,
+          body: response_body.to_json,
+          headers: { 'Content-Type' => 'application/json' },
+        )
+    end
+
     context 'when response has atomic:results' do
       let(:status) { 404 }
       let(:response_body) do
@@ -123,6 +123,74 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
         expect { client.post(path, body: body) }
           .to raise_error(Clicksign::AuthenticationError, 'forbidden')
       end
+    end
+
+    context 'when response body is not valid JSON' do
+      let(:status) { 200 }
+      let(:response_body) { nil }
+
+      before do
+        stub_request(:post, url)
+          .to_return(status: 200, body: 'not-json', headers: {})
+      end
+
+      it 'does not raise JSON::ParserError' do
+        expect { client.post(path, body: body) }.not_to raise_error
+      end
+    end
+  end
+
+  describe 'timeout and retry behavior' do
+    let(:retrying_client) do
+      described_class.new(
+        api_key: 'test-token',
+        base_url: JsonApiFixtures::BASE_URL,
+        max_retries: 2,
+      )
+    end
+
+    before { allow(retrying_client).to receive(:sleep) }
+
+    it 'raises TimeoutError on Net::OpenTimeout' do
+      stub_request(:post, url).to_raise(Net::OpenTimeout)
+      expect { retrying_client.post(path, body: body) }
+        .to raise_error(Clicksign::TimeoutError)
+    end
+
+    it 'raises TimeoutError on Net::ReadTimeout' do
+      stub_request(:post, url).to_raise(Net::ReadTimeout)
+      expect { retrying_client.post(path, body: body) }
+        .to raise_error(Clicksign::TimeoutError)
+    end
+
+    it 'retries on timeout and succeeds on subsequent attempt' do
+      success_body = { 'atomic:results' => [{ 'data' => {} }] }
+      stub_request(:post, url)
+        .to_return(
+          { status: 200, body: 'not-json', headers: {} },
+        )
+      stub_request(:post, url)
+        .to_raise(Net::ReadTimeout)
+        .to_return(status: 200, body: success_body.to_json,
+                   headers: { 'Content-Type' => 'application/json' })
+
+      result = retrying_client.post(path, body: body)
+      expect(result).to eq(success_body)
+      expect(WebMock).to have_requested(:post, url).twice
+    end
+
+    it 'raises after exhausting max_retries' do
+      stub_request(:post, url).to_raise(Net::ReadTimeout)
+      expect { retrying_client.post(path, body: body) }
+        .to raise_error(Clicksign::TimeoutError)
+      expect(WebMock).to have_requested(:post, url).times(3)
+    end
+
+    it 'sleeps with exponential backoff between retries' do
+      stub_request(:post, url).to_raise(Net::ReadTimeout)
+      expect { retrying_client.post(path, body: body) }.to raise_error(Clicksign::TimeoutError)
+      expect(retrying_client).to have_received(:sleep).with(0.5).once
+      expect(retrying_client).to have_received(:sleep).with(1.0).once
     end
   end
 end

@@ -50,15 +50,19 @@ module Clicksign
         attempts = 0
         begin
           attempts += 1
-          http_post(request, uri)
-        rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
-          raise TimeoutError, e.message, e.backtrace
+          safe_http_post(request, uri)
         rescue Clicksign::TimeoutError => e
           raise unless e.retryable? && attempts <= @max_retries
 
           sleep([0.5 * (2**(attempts - 1)), 30].min)
           retry
         end
+      end
+
+      def safe_http_post(request, uri)
+        http_post(request, uri)
+      rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
+        raise TimeoutError, e.message, e.backtrace
       end
 
       def http_post(request, uri)
@@ -83,6 +87,8 @@ module Clicksign
         return nil if response.body.nil? || response.body.empty?
 
         JSON.parse(response.body)
+      rescue JSON::ParserError
+        nil
       end
     end
   end

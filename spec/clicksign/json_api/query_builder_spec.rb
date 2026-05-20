@@ -10,6 +10,11 @@ RSpec.describe Clicksign::JsonApi::QueryBuilder do
                                       'filter[locale]' => 'pt-BR')
     end
 
+    it 'accepts false values' do
+      builder.filter(auto_close: false)
+      expect(builder.to_params).to eq('filter[auto_close]' => false)
+    end
+
     it 'returns self for chaining' do
       expect(builder.filter(status: 'draft')).to be(builder)
     end
@@ -78,6 +83,11 @@ RSpec.describe Clicksign::JsonApi::QueryBuilder do
     it 'sets fields[type] with comma-joined list' do
       builder.fields(envelopes: %w[name status])
       expect(builder.to_params).to eq('fields[envelopes]' => 'name,status')
+    end
+
+    it 'accepts a single string as well as an array' do
+      builder.fields(envelopes: 'name')
+      expect(builder.to_params).to eq('fields[envelopes]' => 'name')
     end
 
     it 'handles multiple resource types' do
