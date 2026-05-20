@@ -54,4 +54,56 @@ RSpec.describe Clicksign::Resources::TemplateField do
     it { is_expected.to be_an(Array) }
     it { is_expected.to all(be_a(described_class)) }
   end
+
+  describe '#update' do
+    let(:field_url) { "#{template_fields_url}/#{field_id}" }
+    let(:instance)  { described_class.send(:build_instance, field) }
+
+    before do
+      stub_request(:patch, field_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            template_field_data(id: field_id, name: 'updated_name', kind: 'email',
+                                template_id: template_id),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'updates and returns the record', :aggregate_failures do
+      updated = instance.update(name: 'updated_name')
+      expect(updated).to be_a(described_class)
+      expect(updated.name).to eq('updated_name')
+    end
+  end
+
+  describe '#delete' do
+    let(:field_url) { "#{template_fields_url}/#{field_id}" }
+    let(:instance)  { described_class.send(:build_instance, field) }
+
+    before do
+      stub_request(:delete, field_url).to_return(status: 204, body: '')
+    end
+
+    it 'deletes without raising' do
+      expect { instance.delete }.not_to raise_error
+    end
+  end
+
+  describe '#[]' do
+    let(:instance) { described_class.send(:build_instance, field) }
+
+    it 'accesses an attribute by string key' do
+      expect(instance['name']).to eq('signer_email')
+    end
+
+    it 'accesses an attribute by symbol key stringified' do
+      expect(instance['kind']).to eq('email')
+    end
+
+    it 'returns nil for an unknown key' do
+      expect(instance['nonexistent']).to be_nil
+    end
+  end
 end

@@ -161,6 +161,32 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
     end
   end
 
+  describe '#envelope_id / #document_id / #signer_id' do
+    let(:instance) { described_class.send(:build_instance, requirement) }
+
+    it 'returns envelope_id from relationship' do
+      expect(instance.envelope_id).to eq(envelope_id)
+    end
+
+    it 'returns document_id from relationship' do
+      expect(instance.document_id).to eq(document_id)
+    end
+
+    it 'returns signer_id from relationship' do
+      expect(instance.signer_id).to eq(signer_id)
+    end
+
+    context 'when built with parent_id' do
+      let(:instance) do
+        described_class.send(:build_instance, requirement, parent_id: envelope_id)
+      end
+
+      it 'prefers parent_id over relationship for envelope_id' do
+        expect(instance.envelope_id).to eq(envelope_id)
+      end
+    end
+  end
+
   describe '#update' do
     let(:instance) do
       described_class.send(:build_instance, requirement, parent_id: envelope_id)

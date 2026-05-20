@@ -62,5 +62,13 @@ RSpec.describe Clicksign::JsonApi::Serializer do
         expect(result).to eq({ data: { type: 'events', attributes: {} } })
       end
     end
+
+    context 'with nil attributes' do
+      it 'passes nil through to the payload' do
+        result = described_class.dump(type: 'events', attributes: nil)
+
+        expect(result[:data][:attributes]).to be_nil
+      end
+    end
   end
 end

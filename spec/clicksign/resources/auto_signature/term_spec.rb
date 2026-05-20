@@ -70,4 +70,21 @@ RSpec.describe Clicksign::Resources::AutoSignature::Term do
       end
     end
   end
+
+  describe '#delete' do
+    let(:term_url) { "#{terms_url}/#{term_id}" }
+    let(:term_data) do
+      { 'id' => term_id, 'type' => 'auto_signature_terms',
+        'attributes' => {}, 'relationships' => {} }
+    end
+    let(:instance) { described_class.send(:build_instance, term_data) }
+
+    before do
+      stub_request(:delete, term_url).to_return(status: 204, body: '')
+    end
+
+    it 'deletes without raising' do
+      expect { instance.delete }.not_to raise_error
+    end
+  end
 end

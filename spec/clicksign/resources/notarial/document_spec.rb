@@ -227,6 +227,26 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
     end
   end
 
+  describe '#envelope_id' do
+    context 'when built with parent_id' do
+      let(:instance) do
+        described_class.send(:build_instance, document, parent_id: envelope_id)
+      end
+
+      it 'returns the parent_id' do
+        expect(instance.envelope_id).to eq(envelope_id)
+      end
+    end
+
+    context 'when built without parent_id (relationship path)' do
+      let(:instance) { described_class.send(:build_instance, document) }
+
+      it 'returns the id from the envelope relationship' do
+        expect(instance.envelope_id).to eq(envelope_id)
+      end
+    end
+  end
+
   describe '#reload' do
     let(:instance) do
       described_class.send(:build_instance, document, parent_id: envelope_id)

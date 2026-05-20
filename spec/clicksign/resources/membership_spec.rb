@@ -62,6 +62,38 @@ RSpec.describe Clicksign::Resources::Membership do
     it { is_expected.to all(have_attributes(user_id: user_id)) }
   end
 
+  describe '.retrieve' do
+    before do
+      stub_request(:get, membership_url)
+        .to_return(
+          status: 200,
+          body: single_resource(primary_membership).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'returns the membership matching the given id' do
+      expect(described_class.retrieve(membership_id).id).to eq(membership_id)
+    end
+
+    context 'when the membership does not exist' do
+      before do
+        stub_request(:get, "#{memberships_url}/00000000-0000-0000-0000-000000000000")
+          .to_return(
+            status: 404,
+            body: { errors: [{ detail: 'not found' }] }.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'raises NotFoundError' do
+        expect do
+          described_class.retrieve('00000000-0000-0000-0000-000000000000')
+        end.to raise_error(Clicksign::NotFoundError)
+      end
+    end
+  end
+
   describe '.create' do
     subject(:membership) do
       described_class.create(role: 'member', user_id: user_id)
@@ -103,6 +135,22 @@ RSpec.describe Clicksign::Resources::Membership do
           data.dig('attributes', 'role') == 'member' &&
           data.dig('relationships', 'user', 'data', 'id') == user_id
       end)
+    end
+
+    context 'with invalid attributes' do
+      before do
+        stub_request(:post, memberships_url)
+          .to_return(
+            status: 422,
+            body: { errors: [{ detail: 'role is invalid' }] }.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'raises ValidationError' do
+        expect { described_class.create(role: 'invalid', user_id: user_id) }
+          .to raise_error(Clicksign::ValidationError, 'role is invalid')
+      end
     end
 
     context 'with optional accessibility attributes' do
@@ -182,6 +230,21 @@ RSpec.describe Clicksign::Resources::Membership do
       membership.delete
 
       expect(WebMock).to have_requested(:delete, membership_url)
+    end
+
+    context 'when the membership does not exist' do
+      before do
+        stub_request(:delete, membership_url)
+          .to_return(
+            status: 404,
+            body: { errors: [{ detail: 'not found' }] }.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'raises NotFoundError' do
+        expect { membership.delete }.to raise_error(Clicksign::NotFoundError)
+      end
     end
   end
 end
