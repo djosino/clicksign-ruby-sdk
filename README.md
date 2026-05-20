@@ -515,7 +515,7 @@ bundle exec rspec
 | `CLICKSIGN_API_KEY` | Token para testes contra sandbox (opcional) |
 | `CLICKSIGN_API_BASE_URL` | URL da API (padrão sandbox nos specs de integração legados) |
 
-A suíte principal usa **WebMock** e não exige rede. Alguns specs antigos ainda podem usar **VCR** com gravação no sandbox.
+A suíte usa **WebMock** e não exige rede.
 
 Estrutura relevante:
 
