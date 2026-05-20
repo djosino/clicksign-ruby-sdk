@@ -25,6 +25,16 @@ RSpec.describe Clicksign::Resources::Webhook do
     )
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('webhooks')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/webhooks')
+    end
+  end
+
   describe '.list' do
     subject(:webhooks) { described_class.list }
 

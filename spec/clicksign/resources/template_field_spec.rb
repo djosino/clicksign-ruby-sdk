@@ -16,6 +16,16 @@ RSpec.describe Clicksign::Resources::TemplateField do
     )
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('template_fields')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/template_fields')
+    end
+  end
+
   describe '.list' do
     subject(:fields) { described_class.list }
 
@@ -76,6 +86,22 @@ RSpec.describe Clicksign::Resources::TemplateField do
       expect(updated).to be_a(described_class)
       expect(updated.name).to eq('updated_name')
     end
+
+    context 'with invalid attributes' do
+      before do
+        stub_request(:patch, field_url)
+          .to_return(
+            status: 422,
+            body: { errors: [{ detail: 'name is too long' }] }.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'raises ValidationError' do
+        expect { instance.update(name: 'x' * 300) }
+          .to raise_error(Clicksign::ValidationError, 'name is too long')
+      end
+    end
   end
 
   describe '#delete' do
@@ -88,6 +114,21 @@ RSpec.describe Clicksign::Resources::TemplateField do
 
     it 'deletes without raising' do
       expect { instance.delete }.not_to raise_error
+    end
+
+    context 'when the field does not exist' do
+      before do
+        stub_request(:delete, field_url)
+          .to_return(
+            status: 404,
+            body: { errors: [{ detail: 'not found' }] }.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'raises NotFoundError' do
+        expect { instance.delete }.to raise_error(Clicksign::NotFoundError)
+      end
     end
   end
 

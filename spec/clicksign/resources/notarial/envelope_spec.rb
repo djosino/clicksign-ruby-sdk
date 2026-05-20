@@ -20,6 +20,16 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
     envelope_data(id: second_envelope_id, name: 'Running Envelope', status: 'running')
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('envelopes')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/envelopes')
+    end
+  end
+
   describe '.list' do
     subject(:envelopes) { described_class.list }
 

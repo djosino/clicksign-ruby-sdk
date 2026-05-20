@@ -22,6 +22,16 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
     )
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('requirements')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/requirements')
+    end
+  end
+
   describe '.create and #delete' do
     before do
       stub_request(:post, requirements_url)

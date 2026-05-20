@@ -31,7 +31,7 @@ RSpec.describe Clicksign::JsonApi::Serializer do
     end
 
     context 'with relationships' do
-      it 'includes relationships in the payload', :aggregate_failures do
+      it 'includes relationships in the payload' do
         rels = { folder: { data: { type: 'folders', id: 'f-1' } } }
         result = described_class.dump(
           type: 'envelopes',

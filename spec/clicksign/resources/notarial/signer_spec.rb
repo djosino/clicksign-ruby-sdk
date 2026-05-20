@@ -13,6 +13,16 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
                 envelope_id: envelope_id)
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('signers')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/signers')
+    end
+  end
+
   describe 'listed via Envelope' do
     subject(:signers) { Clicksign::Resources::Notarial::Envelope.list_signers(envelope_id) }
 

@@ -11,6 +11,16 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
     "#{JsonApiFixtures::BASE_URL}/envelopes/#{envelope_id}/documents/#{document_id}/events"
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('events')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/events')
+    end
+  end
+
   describe '.create_for_document' do
     let(:created_event) do
       event_data(
@@ -103,6 +113,27 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
             name: 'read',
           )
         end.to raise_error(Clicksign::NotFoundError)
+      end
+    end
+
+    context 'with invalid attributes' do
+      before do
+        stub_request(:post, events_url)
+          .to_return(
+            status: 422,
+            body: { errors: [{ detail: 'name is invalid' }] }.to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'raises ValidationError' do
+        expect do
+          described_class.create_for_document(
+            envelope_id: envelope_id,
+            document_id: document_id,
+            name: 'invalid_name',
+          )
+        end.to raise_error(Clicksign::ValidationError, 'name is invalid')
       end
     end
   end

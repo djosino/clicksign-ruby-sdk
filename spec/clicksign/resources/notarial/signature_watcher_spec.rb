@@ -17,6 +17,16 @@ RSpec.describe Clicksign::Resources::Notarial::SignatureWatcher do
     )
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('signature_watchers')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/signature_watchers')
+    end
+  end
+
   describe 'listed via Envelope' do
     subject(:watchers) { Clicksign::Resources::Notarial::Envelope.list_signature_watchers(envelope_id) }
 

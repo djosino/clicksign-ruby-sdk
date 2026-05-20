@@ -13,6 +13,16 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
                   envelope_id: envelope_id)
   end
 
+  describe 'resource configuration' do
+    it 'has the correct resource type' do
+      expect(described_class.resource_type).to eq('documents')
+    end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/documents')
+    end
+  end
+
   describe '.create' do
     let(:created_document) do
       document_data(
@@ -182,7 +192,7 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
         )
     end
 
-    it 'exposes metadata as an attribute', :aggregate_failures do
+    it 'exposes metadata as an attribute' do
       doc = described_class.retrieve(document_id, envelope_id: envelope_id)
 
       expect(doc.metadata).to eq('order_id' => '123', 'customer' => 'ACME')

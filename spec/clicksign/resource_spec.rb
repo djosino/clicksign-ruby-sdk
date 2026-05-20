@@ -102,6 +102,103 @@ RSpec.describe Clicksign::Resource do
     end
   end
 
+  describe 'QueryProxy chain methods' do
+    include_context 'with clicksign configured'
+
+    let(:url)          { "#{JsonApiFixtures::BASE_URL}/widgets" }
+    let(:json_headers) { { 'Content-Type' => 'application/vnd.api+json' } }
+    let(:body) do
+      { 'data' => [{ 'id' => '1', 'type' => 'widgets', 'attributes' => { 'name' => 'W' },
+                     'relationships' => {} }] }
+    end
+
+    describe '.order' do
+      it 'passes sort param to the request' do
+        stub_request(:get, url)
+          .with(query: { 'sort' => 'name' })
+          .to_return(status: 200, body: body.to_json, headers: json_headers)
+
+        klass.order('name').to_a
+        expect(WebMock).to have_requested(:get, url).with(query: { 'sort' => 'name' })
+      end
+
+      it 'returns a QueryProxy' do
+        expect(klass.order('name')).to be_a(Clicksign::Resource::QueryProxy)
+      end
+    end
+
+    describe '.include' do
+      it 'passes include param to the request' do
+        stub_request(:get, url)
+          .with(query: { 'include' => 'owner,tags' })
+          .to_return(status: 200, body: body.to_json, headers: json_headers)
+
+        klass.include('owner', 'tags').to_a
+        expect(WebMock).to have_requested(:get, url).with(query: { 'include' => 'owner,tags' })
+      end
+
+      it 'returns a QueryProxy' do
+        expect(klass.include('owner')).to be_a(Clicksign::Resource::QueryProxy)
+      end
+    end
+
+    describe '.fields' do
+      it 'passes fields[type] param to the request' do
+        stub_request(:get, url)
+          .with(query: { 'fields[widgets]' => 'name' })
+          .to_return(status: 200, body: body.to_json, headers: json_headers)
+
+        klass.fields(widgets: %w[name]).to_a
+        expect(WebMock).to have_requested(:get, url)
+          .with(query: { 'fields[widgets]' => 'name' })
+      end
+
+      it 'returns a QueryProxy' do
+        expect(klass.fields(widgets: %w[name])).to be_a(Clicksign::Resource::QueryProxy)
+      end
+    end
+
+    describe '.page and .per' do
+      it '.page returns a QueryProxy' do
+        expect(klass.page(2)).to be_a(Clicksign::Resource::QueryProxy)
+      end
+
+      it '.per returns a QueryProxy' do
+        expect(klass.per(50)).to be_a(Clicksign::Resource::QueryProxy)
+      end
+
+      it 'passes page[number] and page[size] to the request' do
+        stub_request(:get, url)
+          .with(query: { 'page[number]' => '2', 'page[size]' => '10' })
+          .to_return(status: 200, body: body.to_json, headers: json_headers)
+
+        klass.page(2).per(10).to_a
+        expect(WebMock).to have_requested(:get, url)
+          .with(query: { 'page[number]' => '2', 'page[size]' => '10' })
+      end
+    end
+
+    describe 'QueryProxy terminal methods' do
+      before do
+        stub_request(:get, url)
+          .with(query: { 'sort' => 'name' })
+          .to_return(status: 200, body: body.to_json, headers: json_headers)
+      end
+
+      it '#first returns the first record' do
+        expect(klass.order('name').first).to be_a(klass)
+      end
+
+      it '#last returns the last record' do
+        expect(klass.order('name').last).to be_a(klass)
+      end
+
+      it '#count returns the number of records' do
+        expect(klass.order('name').count).to eq(1)
+      end
+    end
+  end
+
   describe 'auto-pagination' do
     include_context 'with clicksign configured'
 
