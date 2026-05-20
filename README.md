@@ -9,7 +9,7 @@ Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.c
 
 **Requisitos:** Ruby >= 3.0 · dependências de runtime: apenas biblioteca padrão (`net/http`, `json`).
 
-**Documentação da API:** [Sandbox](https://sandbox.clicksign.com/api/v3) · [Produção](https://app.clicksign.com/api/v3) · Referência interna: [`docs/SPEC.md`](docs/SPEC.md)
+**Documentação:** [índice `docs/`](docs/) · [Workflow](docs/WORKFLOW.md) · [Cookbook](docs/cookbook/) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Observabilidade](docs/OBSERVABILITY.md) · [SPEC](docs/SPEC.md) · API: [Sandbox](https://sandbox.clicksign.com/api/v3) · [Produção](https://app.clicksign.com/api/v3)
 
 ---
 
@@ -29,6 +29,12 @@ Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.c
 - [Licença](#licença)
 
 > **Exemplo passo a passo:** [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — fluxo completo de envelope → documento → signatário → requisitos → ativação → notificação.
+
+> **Cookbook (receitas por cenário):** [`docs/cookbook/`](docs/cookbook/) — [retries](docs/cookbook/01-retries.md), [bulk requirements](docs/cookbook/02-bulk-requirements.md), [webhooks](docs/cookbook/03-webhooks.md), [vários clientes](docs/cookbook/04-multi-client.md).
+
+> **Troubleshooting:** [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — sintoma → causa → correção (erros HTTP, multi-tenant, bulk parcial, webhooks).
+
+> **Arquitetura e observabilidade:** [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) · [`docs/OBSERVABILITY.md`](docs/OBSERVABILITY.md)
 
 ---
 
@@ -628,6 +634,8 @@ end
 
 Operações em lote (`BulkRequirement`) podem retornar falhas **por slot** em `response.failures` sem lançar exceção, quando a API responde com `atomic:results` parcial.
 
+Guia detalhado: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md).
+
 ---
 
 ## Ambientes
@@ -687,6 +695,12 @@ lib/clicksign/
   resources/notarial/    # Envelope, Document, Signer, Requirement, ...
   json_api/              # Serializer, Parser, bulk operations
 docs/SPEC.md             # mapa completo de resources e rotas
+docs/WORKFLOW.md         # fluxo notarial ponta a ponta
+docs/README.md           # índice da documentação
+docs/cookbook/           # receitas: retries, bulk, webhooks, multi-cliente
+docs/TROUBLESHOOTING.md  # diagnóstico e erros comuns
+docs/ARCHITECTURE.md     # diagramas e camadas
+docs/OBSERVABILITY.md    # logs, métricas, OpenTelemetry
 ```
 
 ---

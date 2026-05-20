@@ -2,6 +2,8 @@
 
 Este guia percorre o ciclo de vida completo de um envelope: criação, adição de documento e signatário, configuração dos requisitos de assinatura, ativação e notificação.
 
+**Documentação relacionada:** [Cookbook](cookbook/) (receitas) · [Troubleshooting](TROUBLESHOOTING.md) (erros comuns) · [Arquitetura](ARCHITECTURE.md) · [Observabilidade](OBSERVABILITY.md)
+
 ---
 
 ## Configuração inicial
@@ -10,8 +12,9 @@ Este guia percorre o ciclo de vida completo de um envelope: criação, adição 
 require 'clicksign'
 
 Clicksign.configure do |c|
-  c.api_key  = ENV.fetch('CLICKSIGN_API_KEY')
-  c.base_url = ENV.fetch('CLICKSIGN_API_BASE_URL', 'https://sandbox.clicksign.com/api/v3')
+  c.api_key     = ENV.fetch('CLICKSIGN_API_KEY')
+  c.environment = :sandbox   # ou :production
+  # c.base_url = ENV['CLICKSIGN_API_BASE_URL']  # opcional: sobrescreve environment
 end
 
 Envelope          = Clicksign::Resources::Notarial::Envelope
@@ -97,7 +100,7 @@ puts signer.envelope_id # => "uuid-do-envelope"
 ```
 
 > **`refusable: true`** permite que o signatário recuse o documento.
-> **`communicate_events: true`** envia e-mails de atualização ao signatário.
+> **`communicate_events`** define o canal por tipo de evento (`signature_request`, `signature_reminder`, `document_signed`).
 
 ---
 
@@ -158,7 +161,7 @@ running_envelope = envelope.update(status: 'running')
 puts running_envelope.status # => "running"
 ```
 
-> **Atenção:** após ativado, o envelope não pode mais receber novos requisitos. Qualquer tentativa retorna `ValidationError`.
+> **Atenção:** após ativado, o envelope não pode mais receber novos requisitos. Qualquer tentativa retorna `ValidationError`. Ver [Troubleshooting — ValidationError](TROUBLESHOOTING.md#validationerror-400-422).
 
 ---
 
@@ -195,8 +198,8 @@ signer.notify(
 require 'clicksign'
 
 Clicksign.configure do |c|
-  c.api_key  = ENV.fetch('CLICKSIGN_API_KEY')
-  c.base_url = 'https://sandbox.clicksign.com/api/v3'
+  c.api_key     = ENV.fetch('CLICKSIGN_API_KEY')
+  c.environment = :sandbox
 end
 
 Envelope    = Clicksign::Resources::Notarial::Envelope
@@ -261,6 +264,8 @@ else
 end
 ```
 
+Detalhes: [cookbook/02-bulk-requirements.md](cookbook/02-bulk-requirements.md). Falha parcial sem exceção: [TROUBLESHOOTING.md](TROUBLESHOOTING.md#bulkrequirement--falha-parcial-sem-exceção).
+
 ---
 
 ## Monitorar o progresso
@@ -291,3 +296,15 @@ puts envelope.status # "running", "closed", "cancelled"...
 | `running` | Ativo — aguardando assinaturas |
 | `closed` | Concluído — todos os requisitos cumpridos |
 | `cancelled` | Cancelado manualmente |
+
+---
+
+## Próximos passos
+
+| Necessidade | Documento |
+|-------------|-----------|
+| Multi-conta / Sidekiq | [cookbook/04-multi-client.md](cookbook/04-multi-client.md) |
+| Retries e timeouts | [cookbook/01-retries.md](cookbook/01-retries.md) |
+| Webhooks de eventos | [cookbook/03-webhooks.md](cookbook/03-webhooks.md) |
+| Logs e métricas | [OBSERVABILITY.md](OBSERVABILITY.md) |
+| Erro inesperado | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |

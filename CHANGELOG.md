@@ -14,6 +14,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Clicksign::RetryBackoff` — backoff exponencial com **full jitter**, compartilhado por `Client` e `BulkOperationsClient`
 - `Configuration#logger` — log opcional de erros em callbacks de instrumentação
 - Arquivo `REVISION` como fonte única da versão da gem
+- `docs/cookbook/` — receitas de retries, bulk requirements, webhooks e multi-cliente
+- `docs/TROUBLESHOOTING.md` — guia sintoma → causa → correção
+- `docs/ARCHITECTURE.md` — diagramas (Mermaid) e camadas da gem
+- `docs/OBSERVABILITY.md` — hooks, logs, métricas e exemplo OpenTelemetry
+- `docs/README.md` — índice da documentação
+- `docs/WORKFLOW.md` — alinhado a `environment`, links para cookbook e troubleshooting
 
 ### Changed
 
