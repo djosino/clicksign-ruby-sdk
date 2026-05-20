@@ -31,6 +31,15 @@ RSpec.describe Clicksign::Resource do
     it 'raises NoMethodError for unknown attributes' do
       expect { instance.nonexistent }.to raise_error(NoMethodError)
     end
+
+    it 'writes a known attribute via setter' do
+      instance.name = 'Updated'
+      expect(instance.name).to eq('Updated')
+    end
+
+    it 'raises NoMethodError for unknown attribute setter' do
+      expect { instance.nonexistent = 'value' }.to raise_error(NoMethodError)
+    end
   end
 
   describe '#respond_to_missing?' do
@@ -199,6 +208,24 @@ RSpec.describe Clicksign::Resource do
         expect(names).to eq(['Widget 1', 'Widget 2', 'Widget 3'])
         expect(WebMock).to have_requested(:get, url)
           .with(query: { 'page[number]' => '2', 'page[size]' => '3' })
+      end
+    end
+
+    context 'when the API returns an error mid-pagination' do
+      before do
+        stub_request(:get, url)
+          .with(query: { 'page[number]' => '1', 'page[size]' => '2' })
+          .to_return(status: 200, body: page_body(1, 2), headers: json_headers)
+        stub_request(:get, url)
+          .with(query: { 'page[number]' => '2', 'page[size]' => '2' })
+          .to_return(status: 500, body: { errors: [{ detail: 'server error' }] }.to_json,
+                     headers: json_headers)
+      end
+
+      it 'raises ServerError on the failing page' do
+        expect do
+          klass.per(2).auto_paging_each { |_| }
+        end.to raise_error(Clicksign::ServerError)
       end
     end
   end

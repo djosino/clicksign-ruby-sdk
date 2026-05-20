@@ -139,4 +139,31 @@ RSpec.describe Clicksign::Resources::Folder do
       end
     end
   end
+
+  describe '#child_folder_ids' do
+    let(:folder_with_children) do
+      data = folder_data(id: folder_id, name: 'Root Folder', path: '/', in_root: true)
+      data['relationships'] = {
+        'folders' => {
+          'data' => [
+            { 'type' => 'folders', 'id' => child_id },
+            { 'type' => 'folders', 'id' => parent_id },
+          ],
+        },
+      }
+      described_class.send(:build_instance, data)
+    end
+
+    let(:folder_without_children) do
+      described_class.send(:build_instance, root_folder)
+    end
+
+    it 'returns ids of child folders' do
+      expect(folder_with_children.child_folder_ids).to eq([child_id, parent_id])
+    end
+
+    it 'returns an empty array when there are no children' do
+      expect(folder_without_children.child_folder_ids).to eq([])
+    end
+  end
 end

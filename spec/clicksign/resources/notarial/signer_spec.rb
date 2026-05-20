@@ -205,6 +205,31 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
     end
   end
 
+  describe '#envelope_id' do
+    context 'when built with parent_id (nested list path)' do
+      let(:instance) do
+        described_class.send(:build_instance, signer, parent_id: envelope_id)
+      end
+
+      it 'returns the parent_id' do
+        expect(instance.envelope_id).to eq(envelope_id)
+      end
+    end
+
+    context 'when built without parent_id (relationship path)' do
+      let(:instance) do
+        described_class.send(:build_instance,
+                             signer_data(id: signer_id, name: 'Jane Doe',
+                                         email: 'jane@example.com',
+                                         envelope_id: envelope_id))
+      end
+
+      it 'returns the id from the envelope relationship' do
+        expect(instance.envelope_id).to eq(envelope_id)
+      end
+    end
+  end
+
   describe '#update' do
     let(:instance) do
       described_class.send(:build_instance, signer, parent_id: envelope_id)

@@ -349,6 +349,28 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
     end
   end
 
+  describe '#folder_id' do
+    context 'when folder relationship is present' do
+      let(:envelope) do
+        described_class.send(:build_instance,
+                             envelope_data(id: envelope_id, name: 'With Folder',
+                                           folder_id: folder_id))
+      end
+
+      it 'returns the folder id' do
+        expect(envelope.folder_id).to eq(folder_id)
+      end
+    end
+
+    context 'when folder relationship is absent' do
+      let(:envelope) { described_class.send(:build_instance, draft_envelope) }
+
+      it 'returns nil' do
+        expect(envelope.folder_id).to be_nil
+      end
+    end
+  end
+
   describe '#update' do
     subject(:updated) { envelope.update(name: 'Updated Name') }
 
@@ -524,6 +546,33 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
       expect(described_class.list_signature_watchers(envelope_id)).to all(
         be_a(Clicksign::Resources::Notarial::SignatureWatcher),
       )
+    end
+  end
+
+  describe '.list_events' do
+    let(:events_url) { "#{envelope_url}/events" }
+    let(:event) do
+      event_data(id: '66666666-6666-6666-6666-666666666666', name: 'sign',
+                 envelope_id: envelope_id)
+    end
+
+    before do
+      stub_request(:get, events_url)
+        .to_return(
+          status: 200,
+          body: collection_resource([event]).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'returns events for the envelope' do
+      events = described_class.list_events(envelope_id)
+      expect(events.first.name).to eq('sign')
+    end
+
+    it 'returns Event instances' do
+      expect(described_class.list_events(envelope_id))
+        .to all(be_a(Clicksign::Resources::Notarial::Event))
     end
   end
 

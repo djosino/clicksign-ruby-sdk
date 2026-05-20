@@ -27,6 +27,19 @@ RSpec.describe Clicksign::Instrumentation do
     it 'does not raise when no callbacks are registered' do
       expect { described_class.publish(:request, {}) }.not_to raise_error
     end
+
+    it 'isolates callback exceptions so they do not propagate' do
+      described_class.on(:request) { raise 'callback error' }
+      expect { described_class.publish(:request, {}) }.not_to raise_error
+    end
+
+    it 'continues calling remaining callbacks after one raises' do
+      second_called = false
+      described_class.on(:request) { raise 'first callback error' }
+      described_class.on(:request) { second_called = true }
+      described_class.publish(:request, {})
+      expect(second_called).to be(true)
+    end
   end
 
   describe '.clear' do

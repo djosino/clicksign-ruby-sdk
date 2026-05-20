@@ -16,7 +16,11 @@ module Clicksign
       end
 
       def publish(event, payload)
-        @callbacks[event].each { |cb| cb.call(payload) }
+        @callbacks[event].each do |cb|
+          cb.call(payload)
+        rescue StandardError
+          # Callbacks must not affect the request — errors are silently ignored.
+        end
       end
 
       # Removes all registered callbacks — intended for test teardown.

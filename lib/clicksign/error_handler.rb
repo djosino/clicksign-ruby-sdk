@@ -36,15 +36,21 @@ module Clicksign
     end
 
     def self.extract_message(response)
+      return response.message if response.body.nil? || response.body.empty?
+
+      extract_from_json(response)
+    rescue JSON::ParserError
+      response.message
+    end
+
+    def self.extract_from_json(response)
       body = JSON.parse(response.body)
       return response.message unless body.is_a?(Hash)
 
       errors = body['errors']
-      return response.message if errors.nil? || !errors.is_a?(Array)
+      return response.message unless errors.is_a?(Array)
 
       errors.filter_map { |e| e['detail'] || e['title'] }.join(', ')
-    rescue JSON::ParserError
-      response.message
     end
   end
 end

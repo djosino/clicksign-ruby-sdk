@@ -112,6 +112,22 @@ RSpec.describe Clicksign::ErrorHandler do
       end
     end
 
+    context 'when response body is nil' do
+      it 'falls back to response.message without raising TypeError' do
+        expect do
+          described_class.call(mock_response(500, nil))
+        end.to raise_error(Clicksign::ServerError, 'HTTP Error')
+      end
+    end
+
+    context 'when response body is empty' do
+      it 'falls back to response.message' do
+        expect do
+          described_class.call(mock_response(500, ''))
+        end.to raise_error(Clicksign::ServerError, 'HTTP Error')
+      end
+    end
+
     context 'when response body is not JSON' do
       it 'falls back to response.message' do
         expect do
