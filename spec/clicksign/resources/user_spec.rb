@@ -198,4 +198,37 @@ RSpec.describe Clicksign::Resources::User do
       expect(WebMock).to have_requested(:get, me_url)
     end
   end
+
+  describe '#update' do
+    let(:instance) { described_class.send(:build_instance, primary_user) }
+
+    before do
+      stub_request(:patch, user_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            user_data(id: user_id, name: 'Updated Name', email: 'jane@example.com'),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'updates and returns the record', :aggregate_failures do
+      updated = instance.update(name: 'Updated Name')
+      expect(updated).to be_a(described_class)
+      expect(updated.name).to eq('Updated Name')
+    end
+  end
+
+  describe '#delete' do
+    let(:instance) { described_class.send(:build_instance, primary_user) }
+
+    before do
+      stub_request(:delete, user_url).to_return(status: 204, body: '')
+    end
+
+    it 'deletes without raising' do
+      expect { instance.delete }.not_to raise_error
+    end
+  end
 end

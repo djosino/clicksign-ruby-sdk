@@ -160,4 +160,120 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
       end
     end
   end
+
+  describe '#update' do
+    let(:instance) do
+      described_class.send(:build_instance, requirement, parent_id: envelope_id)
+    end
+
+    before do
+      stub_request(:patch, requirement_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            requirement_data(id: requirement_id, action: 'provide_evidence',
+                             envelope_id: envelope_id, document_id: document_id,
+                             signer_id: signer_id),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'updates and returns the record', :aggregate_failures do
+      updated = instance.update(action: 'provide_evidence')
+      expect(updated).to be_a(described_class)
+      expect(updated.action).to eq('provide_evidence')
+    end
+  end
+
+  describe '#delete' do
+    let(:instance) do
+      described_class.send(:build_instance, requirement, parent_id: envelope_id)
+    end
+
+    before do
+      stub_request(:delete, requirement_url).to_return(status: 204, body: '')
+    end
+
+    it 'deletes without raising' do
+      expect { instance.delete }.not_to raise_error
+    end
+  end
+
+  describe '.list_for_document' do
+    subject(:requirements) { described_class.list_for_document(document_id) }
+
+    let(:doc_requirements_url) do
+      "#{JsonApiFixtures::BASE_URL}/documents/#{document_id}/relationships/requirements"
+    end
+
+    before do
+      stub_request(:get, doc_requirements_url)
+        .to_return(
+          status: 200,
+          body: collection_resource([requirement]).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it { is_expected.to be_an(Array) }
+    it { is_expected.to all(be_a(described_class)) }
+
+    it 'requests the document relationships endpoint' do
+      requirements
+      expect(WebMock).to have_requested(:get, doc_requirements_url)
+    end
+
+    it 'returns parsed requirements', :aggregate_failures do
+      expect(requirements.first.document_id).to eq(document_id)
+      expect(requirements.first.signer_id).to eq(signer_id)
+    end
+
+    context 'with filters' do
+      subject(:requirements) do
+        described_class.list_for_document(document_id, 'requirement.action': 'agree')
+      end
+
+      before do
+        stub_request(:get, doc_requirements_url)
+          .with(query: { 'filter[requirement.action]' => 'agree' })
+          .to_return(
+            status: 200,
+            body: collection_resource([requirement]).to_json,
+            headers: { 'Content-Type' => 'application/vnd.api+json' },
+          )
+      end
+
+      it 'passes filter params to the API' do
+        requirements
+        expect(WebMock).to have_requested(:get, doc_requirements_url)
+          .with(query: { 'filter[requirement.action]' => 'agree' })
+      end
+    end
+  end
+
+  describe '.list_for_signer' do
+    subject(:requirements) { described_class.list_for_signer(signer_id) }
+
+    let(:signer_requirements_url) do
+      "#{JsonApiFixtures::BASE_URL}/signers/#{signer_id}/relationships/requirements"
+    end
+
+    before do
+      stub_request(:get, signer_requirements_url)
+        .to_return(
+          status: 200,
+          body: collection_resource([requirement]).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it { is_expected.to be_an(Array) }
+    it { is_expected.to all(be_a(described_class)) }
+
+    it 'requests the signer relationships endpoint' do
+      requirements
+      expect(WebMock).to have_requested(:get, signer_requirements_url)
+    end
+  end
 end

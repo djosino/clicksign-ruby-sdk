@@ -6,6 +6,7 @@ module Clicksign
       module_function
 
       def parse(raw, envelope_id:, operations:)
+        raw ||= {}
         raise ValidationError, format_errors(raw['errors']) if envelope_errors?(raw)
 
         Array(raw['atomic:results']).each_with_index.map do |slot, index|

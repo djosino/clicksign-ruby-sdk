@@ -189,6 +189,44 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
     end
   end
 
+  describe '#update' do
+    let(:instance) do
+      described_class.send(:build_instance, document, parent_id: envelope_id)
+    end
+
+    before do
+      stub_request(:patch, document_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            document_data(id: document_id, filename: 'updated.pdf',
+                          envelope_id: envelope_id),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'updates and returns the record', :aggregate_failures do
+      updated = instance.update(filename: 'updated.pdf')
+      expect(updated).to be_a(described_class)
+      expect(updated.filename).to eq('updated.pdf')
+    end
+  end
+
+  describe '#delete' do
+    let(:instance) do
+      described_class.send(:build_instance, document, parent_id: envelope_id)
+    end
+
+    before do
+      stub_request(:delete, document_url).to_return(status: 204, body: '')
+    end
+
+    it 'deletes without raising' do
+      expect { instance.delete }.not_to raise_error
+    end
+  end
+
   describe '#reload' do
     let(:instance) do
       described_class.send(:build_instance, document, parent_id: envelope_id)

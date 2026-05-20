@@ -140,6 +140,39 @@ RSpec.describe Clicksign::Resources::Folder do
     end
   end
 
+  describe '#update' do
+    let(:instance) { described_class.send(:build_instance, root_folder) }
+
+    before do
+      stub_request(:patch, folder_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            folder_data(id: folder_id, name: 'Renamed Folder'),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'updates and returns the record', :aggregate_failures do
+      updated = instance.update(name: 'Renamed Folder')
+      expect(updated).to be_a(described_class)
+      expect(updated.name).to eq('Renamed Folder')
+    end
+  end
+
+  describe '#delete' do
+    let(:instance) { described_class.send(:build_instance, root_folder) }
+
+    before do
+      stub_request(:delete, folder_url).to_return(status: 204, body: '')
+    end
+
+    it 'deletes without raising' do
+      expect { instance.delete }.not_to raise_error
+    end
+  end
+
   describe '#child_folder_ids' do
     let(:folder_with_children) do
       data = folder_data(id: folder_id, name: 'Root Folder', path: '/', in_root: true)

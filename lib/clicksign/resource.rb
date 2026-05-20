@@ -234,7 +234,7 @@ module Clicksign
     end
 
     def [](key)
-      @_attributes[key.to_s]
+      @_attributes&.[](key.to_s)
     end
 
     def method_missing(name, *args, &block)

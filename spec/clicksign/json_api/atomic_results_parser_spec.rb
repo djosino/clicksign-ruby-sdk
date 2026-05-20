@@ -24,8 +24,12 @@ RSpec.describe Clicksign::JsonApi::AtomicResultsParser do
       expect(described_class.format_errors(errors)).to eq('first, second')
     end
 
-    it 'returns a default message for non-array errors' do
+    it 'returns a default message for nil errors' do
       expect(described_class.format_errors(nil)).to eq('Validation failed')
+    end
+
+    it 'returns a default message when errors is not an Array' do
+      expect(described_class.format_errors('detail' => 'x')).to eq('Validation failed')
     end
   end
 
