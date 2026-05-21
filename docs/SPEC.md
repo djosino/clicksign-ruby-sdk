@@ -152,7 +152,7 @@ Baseado nas rotas da Clicksign API v3, namespace `:v3`.
 
 | Método | SDK | HTTP |
 |--------|-----|------|
-| Listar | `Document.list_for_envelope(envelope_id)` | `GET /envelopes/:id/documents` |
+| Listar | `Envelope.list_documents(envelope_id)` | `GET /envelopes/:id/documents` |
 | Buscar | `Document.retrieve(id)` | `GET /envelopes/:envelope_id/documents/:id` |
 | Criar | `Document.create(**attrs)` | `POST /envelopes/:envelope_id/documents` |
 | Atualizar | `document.update(**attrs)` | `PATCH /envelopes/:envelope_id/documents/:id` |
@@ -179,7 +179,7 @@ Baseado nas rotas da Clicksign API v3, namespace `:v3`.
 
 | Método | SDK | HTTP |
 |--------|-----|------|
-| Listar | `Signer.list_for_envelope(envelope_id)` | `GET /envelopes/:id/signers` |
+| Listar | `Envelope.list_signers(envelope_id)` | `GET /envelopes/:id/signers` |
 | Criar | `Signer.create(**attrs)` | `POST /envelopes/:envelope_id/signers` |
 | Deletar | `signer.delete` | `DELETE /envelopes/:envelope_id/signers/:id` |
 
@@ -251,7 +251,7 @@ response.failures      # slots com errors
 
 | Método | SDK | HTTP |
 |--------|-----|------|
-| Listar | `SignatureWatcher.list_for_envelope(id)` | `GET /envelopes/:id/signature_watchers` |
+| Listar | `Envelope.list_signature_watchers(id)` | `GET /envelopes/:id/signature_watchers` |
 | Criar | `SignatureWatcher.create(**attrs)` | `POST /envelopes/:id/signature_watchers` |
 | Buscar | `SignatureWatcher.retrieve(id)` | `GET /envelopes/:id/signature_watchers/:id` |
 | Deletar | `signature_watcher.delete` | `DELETE /envelopes/:id/signature_watchers/:id` |
@@ -541,7 +541,6 @@ spec/
         bulk_requirement_spec.rb
         signature_watcher_spec.rb
       # ... um spec por resource
-  vcr_cassettes/               # gravados automaticamente na 1ª execução
 ```
 
 ---
