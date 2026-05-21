@@ -17,7 +17,7 @@ O **Clicksign Ruby SDK** é uma gem Ruby que expõe a API REST da Clicksign de f
 
 - Abstrair a comunicação HTTPS com a API JSON:API da Clicksign (`sandbox.clicksign.com/api/v3`, `app.clicksign.com/api/v3`).
 - Materializar respostas JSON:API em objetos Ruby tipados.
-- Oferecer API fluente e idiomática (`Clicksign::Resources::Notarial::Envelope.list`, `.create`, `.retrieve`, `#update`, `#delete`).
+- Oferecer API fluente e idiomática (`Envelope.filter`, `.list`, `.create`, `.retrieve`, `#update`, `#delete`).
 - Tratar erros, validações e mapeamento de status HTTP de forma padronizada.
 
 ### Principais Usuários/Personas
@@ -115,7 +115,8 @@ Baseado nas rotas da Clicksign API v3, namespace `:v3`.
 
 | Método | SDK | HTTP |
 |--------|-----|------|
-| Listar | `Envelope.list` | `GET /envelopes` |
+| Listar (1ª página) | `Envelope.list` | `GET /envelopes` |
+| Listar (com filtros/chain) | `Envelope.filter(...).to_a` | `GET /envelopes?filter[...]` |
 | Buscar | `Envelope.retrieve(id)` | `GET /envelopes/:id` |
 | Criar | `Envelope.create(**attrs)` | `POST /envelopes` |
 | Atualizar | `envelope.update(**attrs)` | `PATCH /envelopes/:id` |

@@ -39,7 +39,7 @@ tenant_service.use do
 end
 ```
 
-> **Nota:** `BulkRequirement` usa `Clicksign.bulk_operations_client`, criado a partir da **config global** (`Clicksign.configure`). Em apps multi-tenant, defina `max_retries` no initializer global ou execute bulk jobs com a mesma política de retry para todos os tenants. Ver [Vários clientes](04-multi-client.md).
+> **Nota:** `BulkRequirement` usa `Clicksign.bulk_operations_client`, criado a partir da **config global** (`Clicksign.configure`). Em apps multi-tenant, defina `max_retries` no initializer global ou execute bulk jobs com a mesma política de retry para todos os tenants. Hooks `:request`/`:retry`/`:error` funcionam no bulk; retry automático continua **só em timeout**. Ver [Vários clientes](04-multi-client.md).
 
 ---
 

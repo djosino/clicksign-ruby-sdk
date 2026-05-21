@@ -8,11 +8,11 @@ A gem não depende de APM nem OpenTelemetry. Expõe **hooks leves** (`Clicksign.
 
 | Evento | Quando dispara | Onde |
 |--------|----------------|------|
-| `:request` | Após cada tentativa HTTP no `Client` (sucesso ou erro HTTP) | `lib/clicksign/client.rb` |
-| `:retry` | Antes do `sleep`, quando vai retentar | `Client` |
-| `:error` | Quando uma exceção `Clicksign::Error` (ou `TimeoutError`) será relançada | `Client` |
+| `:request` | Após cada tentativa HTTP (sucesso ou erro HTTP) | `Client`, `BulkOperationsClient` |
+| `:retry` | Antes do `sleep`, quando vai retentar | `Client` (5xx/429/timeout), `BulkOperationsClient` (timeout) |
+| `:error` | Quando uma exceção `Clicksign::Error` (ou `TimeoutError`) será relançada | `Client`, `BulkOperationsClient` |
 
-> **BulkOperationsClient** e webhooks de entrada **não** passam por esses hooks hoje.
+> Webhooks de **entrada** (seu controller) não passam por esses hooks — só chamadas de saída à API.
 
 ---
 
@@ -209,7 +209,7 @@ Em specs que registram `on_request`, chame `Instrumentation.clear` no `after` do
 - Spans OTel embutidos
 - Export automático para Datadog/New Relic
 - Correlação `request_id` da API com trace ID (você pode copiar `e[:error].request_id` para o span manualmente)
-- Instrumentação no `BulkOperationsClient`
+- Retry automático em 5xx/429 no `BulkOperationsClient` (só timeout; ver [01-retries](cookbook/01-retries.md))
 
 ---
 

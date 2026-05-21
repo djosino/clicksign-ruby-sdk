@@ -93,6 +93,8 @@ end
 
 Cada job define o client no `Thread.current` do worker; jobs paralelos de tenants diferentes não misturam tokens.
 
+> **Falcon / async-ruby / Fibers:** `Thread.current` do `use` pode não propagar para Fibers filhos. Ver [08-production-limitations.md](08-production-limitations.md).
+
 ---
 
 ## Blocos aninhados

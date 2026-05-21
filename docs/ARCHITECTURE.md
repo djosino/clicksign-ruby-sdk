@@ -39,7 +39,7 @@ flowchart TB
   RES --> PARSER
 ```
 
-1. A aplicação chama `Envelope.create`, `Document.list`, etc.
+1. A aplicação chama `Envelope.create`, `Envelope.filter(...).to_a`, `Webhook.list`, etc.
 2. `Resource` resolve o client: `Thread.current[:clicksign_client]` (dentro de `Services#use`) ou `Clicksign.client` (config global).
 3. `Client` serializa JSON:API, aplica retry com jitter, publica eventos e mapeia erros HTTP.
 4. A resposta é parseada em objetos `Resource` com atributos dinâmicos.
@@ -143,7 +143,7 @@ sequenceDiagram
   end
 ```
 
-`BulkOperationsClient` publica menos superfície (sem hooks de instrumentação hoje); retry apenas em `TimeoutError`.
+`BulkOperationsClient` usa os mesmos hooks (`RequestInstrumentation`); retry automático apenas em `TimeoutError` (não em 5xx/429).
 
 ---
 
@@ -154,6 +154,17 @@ sequenceDiagram
 | Ruby ≥ 3.0 | Runtime |
 | `net/http`, `json`, `uri` | Únicas deps de produção |
 | OpenSSL (stdlib) | HMAC de webhooks |
+
+---
+
+## Limitações de design
+
+| Limitação | Detalhe |
+|-----------|---------|
+| **Sem connection pool** | Cada HTTP = `Net::HTTP.start` novo; em Puma de alta concorrência pode doer em latência/TCP |
+| **`Thread.current` em `Services#use`** | OK em Puma/Sidekiq; **não** confiável com Falcon, async-ruby ou Fibers filhos |
+
+Mitigações e cenários: [cookbook/08-production-limitations.md](cookbook/08-production-limitations.md).
 
 ---
 

@@ -25,12 +25,13 @@ Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.c
 - [Outros recursos](#outros-recursos)
 - [Tratamento de erros](#tratamento-de-erros)
 - [Ambientes](#ambientes)
+- [Limitações e produção](#limitações-e-produção)
 - [Desenvolvimento](#desenvolvimento)
 - [Licença](#licença)
 
 > **Exemplo passo a passo:** [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — fluxo completo de envelope → documento → signatário → requisitos → ativação → notificação.
 
-> **Cookbook (receitas por cenário):** [`docs/cookbook/`](docs/cookbook/) — [retries](docs/cookbook/01-retries.md), [bulk requirements](docs/cookbook/02-bulk-requirements.md), [webhooks](docs/cookbook/03-webhooks.md), [vários clientes](docs/cookbook/04-multi-client.md).
+> **Cookbook (receitas por cenário):** [`docs/cookbook/`](docs/cookbook/) — [retries](docs/cookbook/01-retries.md), [bulk requirements](docs/cookbook/02-bulk-requirements.md), [webhooks](docs/cookbook/03-webhooks.md), [vários clientes](docs/cookbook/04-multi-client.md), [list vs filter](docs/cookbook/07-list-and-filter.md), [limitações de produção](docs/cookbook/08-production-limitations.md).
 
 > **Troubleshooting:** [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — sintoma → causa → correção (erros HTTP, multi-tenant, bulk parcial, webhooks).
 
@@ -197,7 +198,7 @@ Clicksign.configure do |c|
 end
 ```
 
-Operações em lote (`BulkRequirement`) usam o mesmo `max_retries` via `Clicksign.bulk_operations_client`.
+Operações em lote (`BulkRequirement`) usam o mesmo `max_retries` e os mesmos hooks de instrumentação via `Clicksign.bulk_operations_client` (retry automático só em timeout).
 
 ### Instrumentação
 
@@ -474,23 +475,40 @@ Event.create_for_document(
 
 ## Filtros, ordenação e paginação
 
-A API de listagem é chainable:
+### `list` vs `filter`
+
+| Método | Retorno | Uso |
+|--------|---------|-----|
+| `Resource.list` | `Array` | Primeira página da collection, **sem** filtros na chain |
+| `Resource.filter(...)` | `QueryProxy` | Filtros, ordenação, paginação, includes — termine com `.to_a`, `.first`, `.auto_paging_each`, etc. |
+
+`list` **não** aceita argumentos. Para filtrar: `Envelope.filter(status: 'draft').to_a` (não `Envelope.list(status: 'draft')`).
+
+Guia completo: [`docs/cookbook/07-list-and-filter.md`](docs/cookbook/07-list-and-filter.md).
+
+```ruby
+# Sem filtros — retorna Array imediatamente
+Webhook.list
+
+# Com filtros ou chain — começa em filter
+Envelope.filter(status: 'draft').to_a
+```
+
+### Chain de consulta
 
 ```ruby
 Envelope
   .filter(status: 'running', name: 'Contrato')
+  .with_includes('folder')   # sideload JSON:API (.include('folder') também funciona)
   .order('-created')
   .page(1)
   .per(20)
   .to_a
 
-# Atalho quando há poucos filtros
 Template.filter(name: 'NDA padrão').first
 
-# Navegação no resultado
-Envelope.order('-created').first   # mais recente
-Envelope.order('-created').last    # mais antigo
-Envelope.filter(status: 'draft').count  # total de rascunhos
+Envelope.order('-created').first
+Envelope.filter(status: 'draft').count
 ```
 
 Atributos dos objetos retornados são acessados como métodos ou por chave string:
@@ -509,6 +527,8 @@ Envelope.filter(status: 'running').map(&:name)
 Envelope.order('-created').select { |e| e.auto_close }
 ```
 
+Percorrer **todas** as páginas automaticamente (`auto_paging_each`, `each_page`, `auto_paging`): a gem segue `links.next` da JSON:API quando presente; se a API não enviar `links`, usa heurística por `page[size]`.
+
 ---
 
 ## Outros recursos
@@ -517,8 +537,8 @@ Envelope.order('-created').select { |e| e.auto_close }
 |---------|--------|---------|
 | Webhook | `Clicksign::Resources::Webhook` | `Webhook.create(endpoint: 'https://...', events: ['envelope.completed'], status: 'active')` |
 | Pasta | `Clicksign::Resources::Folder` | `Folder.create(name: 'Contratos 2026', folder_id: pai&.id)` |
-| Template | `Clicksign::Resources::Template` | `Template.list` · `Template.list_template_fields(id)` |
-| Usuário | `Clicksign::Resources::User` | `User.me` · `User.filter(email: '...')` |
+| Template | `Clicksign::Resources::Template` | `Template.list` · `Template.filter(name: '...')` · `Template.list_template_fields(id)` |
+| Usuário | `Clicksign::Resources::User` | `User.me` · `User.list` · `User.filter(email: '...')` |
 | Membership | `Clicksign::Resources::Membership` | `Membership.create(role: 'member', user_id: user.id)` |
 | Grupo | `Clicksign::Resources::Group` | `Group.add_users(group_id, [user.id])` |
 | ACL pasta/grupo | `Clicksign::Resources::AccessControlList` | `AccessControlList.create(folder_id:, group_id:)` |
@@ -666,6 +686,30 @@ Gere tokens de API no painel da Clicksign do ambiente correspondente.
 
 ---
 
+## Limitações e produção
+
+Design **stdlib-only** (`net/http`) — sem dependências de runtime extras. Duas limitações importantes em alta carga ou runtimes modernos:
+
+### Sem connection pool
+
+Cada request abre e fecha uma conexão TCP (via `Net::HTTP.start`). Não há reutilização persistente entre chamadas.
+
+- **OK** para jobs sequenciais, integrações moderadas e a maioria dos apps Rails.
+- **Atenção** em Puma com muitas threads e várias chamadas Clicksign por request: overhead de handshake/TLS pode virar gargalo antes do rate limit da API.
+
+Mitigações: menos round-trips (`BulkRequirement`, batch na app), filas (Sidekiq), cache de leitura. Detalhes: [`docs/cookbook/08-production-limitations.md`](docs/cookbook/08-production-limitations.md).
+
+### `Thread.current` e Fibers
+
+`Clicksign::Services#use` armazena o client em `Thread.current[:clicksign_client]`. Resources usam esse client dentro do bloco.
+
+- **Compatível:** Puma (thread por request), Sidekiq, scripts.
+- **Incompatível** com propagar contexto em **Fibers** (Falcon, async-ruby): o client do `use` pode não estar visível no Fiber que chama `Envelope.create`.
+
+Mitigações: `Clicksign.configure` por processo (single-tenant), `Clicksign::Client.new` explícito no seu contexto async, ou evitar `Services` em stacks fiberizadas.
+
+---
+
 ## Desenvolvimento
 
 Clone o repositório e instale dependências de desenvolvimento:
@@ -690,6 +734,7 @@ lib/clicksign/
   client.rb              # HTTP (GET, POST, PATCH, DELETE), retry, timeouts
   services.rb            # Cliente por contexto (multi-conta via #use)
   configuration.rb       # Config global, environment, timeouts, retry
+  request_instrumentation.rb  # Hooks compartilhados Client + BulkOperationsClient
   instrumentation.rb     # Eventos :request, :retry, :error
   resource.rb            # CRUD base, filtros, nested lists
   resources/notarial/    # Envelope, Document, Signer, Requirement, ...

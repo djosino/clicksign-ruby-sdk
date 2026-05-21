@@ -244,7 +244,7 @@ Ver [02-bulk-requirements](cookbook/02-bulk-requirements.md).
 |-----------|----------------|
 | `max_retries` | `> 0` |
 | Tipo de erro | `ServerError`, `RateLimitError`, `TimeoutError` |
-| Client | Resources usam `Client`; bulk só retenta **timeout** |
+| Client | Resources usam `Client`; bulk só retenta **timeout** (ambos publicam hooks `:request`/`:error`) |
 | `ValidationError` | Nunca retenta (corrigir payload) |
 
 ---
@@ -263,6 +263,20 @@ Clicksign.configure { |c| c.logger = Rails.logger }
 
 ---
 
+### `list` vs `filter` — tipo inesperado
+
+**Sintoma:** `filter` não itera como `Array`; ou `list(status: 'x')` levanta `ArgumentError`.
+
+| Esperado | API |
+|----------|-----|
+| Lista simples (1ª página) | `Webhook.list` → `Array` |
+| Com filtros / ordenação | `Envelope.filter(status: 'draft').to_a` |
+| Chain sem materializar | `Envelope.filter(...).order(...)` → `QueryProxy` |
+
+`list` **não** aceita argumentos. Guia: [cookbook/07-list-and-filter.md](cookbook/07-list-and-filter.md).
+
+---
+
 ### Paginação / lista vazia inesperada
 
 **Sintoma:** `.filter(...).to_a` retorna `[]` mas há dados no painel.
@@ -273,6 +287,8 @@ Clicksign.configure { |c| c.logger = Rails.logger }
 Envelope.filter(status: 'running').auto_paging_each { |e| puts e.id }
 ```
 
+**Nota:** `auto_paging_each` / `each_page` param quando `links.next` é `null` ou ausente (JSON:API). Se a API **não** enviar `links`, a gem usa heurística `page[size]` (pode haver 1 GET extra quando a última página vem cheia).
+
 ---
 
 ### Atributo “não existe” no resource
@@ -282,6 +298,26 @@ Envelope.filter(status: 'running').auto_paging_each { |e| puts e.id }
 **Causa:** atributo não veio na resposta JSON:API (campos omitidos, `fields` restritivo).
 
 **Correção:** use `envelope['nome_do_campo']` ou `include` / reload; confira payload em `e.response_body` em erros de validação.
+
+---
+
+## Alta carga / lentidão
+
+**Sintoma:** app lenta sob concorrência; muitas conexões; CPU em TLS.
+
+**Causas:** a gem abre **nova conexão TCP por request** (`Net::HTTP.start`) — sem pool. Normal no design stdlib-only.
+
+**O que fazer:** menos chamadas por request, `BulkRequirement`, jobs em fila, cache; medir com `on_request` (`duration_ms`). Ver [cookbook/08-production-limitations.md](cookbook/08-production-limitations.md).
+
+---
+
+## Falcon / async / token errado em Fiber
+
+**Sintoma:** em Falcon ou async-ruby, chamadas usam token global ou falham após `Services#use`.
+
+**Causa:** client em `Thread.current[:clicksign_client]` não propaga para Fibers filhos.
+
+**Correção:** `Clicksign.configure` por processo (single-tenant) ou não usar `Services#use` em código fiberizado. Ver [08-production-limitations.md](cookbook/08-production-limitations.md).
 
 ---
 
@@ -309,4 +345,6 @@ Envelope.filter(status: 'running').auto_paging_each { |e| puts e.id }
 | Rotas e resources | [SPEC.md](SPEC.md) |
 | Arquitetura da gem | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Observabilidade | [OBSERVABILITY.md](OBSERVABILITY.md) |
+| List vs filter | [cookbook/07-list-and-filter.md](cookbook/07-list-and-filter.md) |
+| Limitações (pool, Fibers) | [cookbook/08-production-limitations.md](cookbook/08-production-limitations.md) |
 | API oficial | [developers.clicksign.com](https://developers.clicksign.com/) |

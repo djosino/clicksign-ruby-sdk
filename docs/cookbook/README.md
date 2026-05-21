@@ -8,6 +8,8 @@ Receitas curtas e copiáveis por cenário de integração. Cada página assume `
 | [Bulk requirements](02-bulk-requirements.md) | Montar agree + evidência + rubrica em uma chamada |
 | [Webhooks](03-webhooks.md) | Cadastrar endpoint na API, validar HMAC, processar eventos |
 | [Vários clientes](04-multi-client.md) | Multi-tenant, Sidekiq, blocos aninhados, `Client` direto |
+| [List vs filter](07-list-and-filter.md) | Quando usar `list` (Array) vs `filter` (QueryProxy) |
+| [Limitações de produção](08-production-limitations.md) | Sem connection pool; `Thread.current` vs Fibers |
 
 **Fluxo completo de assinatura:** [`WORKFLOW.md`](../WORKFLOW.md) — envelope → documento → signatário → requisitos → ativação → notificação.
 

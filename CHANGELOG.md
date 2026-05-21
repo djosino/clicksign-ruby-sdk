@@ -14,18 +14,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Clicksign::RetryBackoff` — backoff exponencial com **full jitter**, compartilhado por `Client` e `BulkOperationsClient`
 - `Configuration#logger` — log opcional de erros em callbacks de instrumentação
 - Arquivo `REVISION` como fonte única da versão da gem
-- `docs/cookbook/` — receitas de retries, bulk requirements, webhooks e multi-cliente
+- `docs/cookbook/` — receitas de retries, bulk requirements, webhooks, multi-cliente, list vs filter e limitações de produção
 - `docs/TROUBLESHOOTING.md` — guia sintoma → causa → correção
 - `docs/ARCHITECTURE.md` — diagramas (Mermaid) e camadas da gem
 - `docs/OBSERVABILITY.md` — hooks, logs, métricas e exemplo OpenTelemetry
 - `docs/README.md` — índice da documentação
 - `docs/WORKFLOW.md` — alinhado a `environment`, links para cookbook e troubleshooting
+- `RequestInstrumentation` — módulo compartilhado entre `Client` e `BulkOperationsClient`
+
+### Fixed
+
+- `Resource.include` não sombreia mais `Module#include` — módulos Ruby em subclasses voltam a funcionar; strings/símbolos continuam em JSON:API sideload (`with_includes` como API explícita)
+- `infer_resource_type` não quebra em classe anônima (`name` nil) — fallback `'resources'`
+- `BulkOperationsClient` publica eventos `:request`, `:retry` e `:error` (via `RequestInstrumentation`)
+- Auto-pagination usa `links.next` quando a API envia `links` — evita requisição extra na última página cheia; fallback por tamanho da página se `links` ausente
 
 ### Changed
 
+- `Resource.list` não aceita mais `**filters` — use `filter(...).to_a` para consultas com critérios; `list` retorna sempre `Array` (primeira página)
 - `Clicksign::VERSION` lê de `REVISION` em vez de constante fixa no código
 - `Instrumentation#publish` emite `logger.warn` quando um callback falha e `config.logger` está definido (comportamento silencioso permanece o padrão)
-- README: seções de multi-conta (`Services`, `Client`), timeouts, retry, instrumentação e `environment`
+- README: seções de multi-conta (`Services`, `Client`), timeouts, retry, instrumentação, `environment` e limitações de produção (sem pool, Fibers)
 - README: retry documentado com full jitter; removida referência a VCR nos testes
 
 ---
