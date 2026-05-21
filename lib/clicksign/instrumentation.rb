@@ -5,6 +5,7 @@ module Clicksign
     EVENTS = %i[request retry error].freeze
 
     @callbacks = Hash.new { |h, k| h[k] = [] }
+    @mutex     = Mutex.new
 
     class << self
       def on(event, &block)
@@ -12,11 +13,12 @@ module Clicksign
           raise ArgumentError, "Unknown event: #{event}. Valid: #{EVENTS.join(', ')}"
         end
 
-        @callbacks[event] << block
+        @mutex.synchronize { @callbacks[event] << block }
       end
 
       def publish(event, payload)
-        @callbacks[event].each do |cb|
+        callbacks = @mutex.synchronize { @callbacks[event].dup }
+        callbacks.each do |cb|
           cb.call(payload)
         rescue StandardError => e
           Clicksign.configuration.logger&.warn(
@@ -28,7 +30,7 @@ module Clicksign
 
       # Removes all registered callbacks — intended for test teardown.
       def clear
-        @callbacks = Hash.new { |h, k| h[k] = [] }
+        @mutex.synchronize { @callbacks = Hash.new { |h, k| h[k] = [] } }
       end
     end
   end

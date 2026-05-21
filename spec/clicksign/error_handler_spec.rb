@@ -153,6 +153,15 @@ RSpec.describe Clicksign::ErrorHandler do
       end
     end
 
+    context 'when errors array items have neither detail nor title' do
+      it 'falls back to response.message instead of empty string' do
+        body = { 'errors' => [{}] }.to_json
+        expect do
+          described_class.call(mock_response(422, body))
+        end.to raise_error(Clicksign::ValidationError, 'HTTP Error')
+      end
+    end
+
     context 'when raising errors with metadata' do
       it 'exposes status_code on the raised exception' do
         err = nil
@@ -169,7 +178,7 @@ RSpec.describe Clicksign::ErrorHandler do
         begin
           described_class.call(
             mock_response(422, json_body('invalid'),
-                          headers: { 'x-request-id' => 'req-abc123' }),
+              headers: { 'x-request-id' => 'req-abc123' }),
           )
         rescue Clicksign::ValidationError => e
           err = e
@@ -227,9 +236,9 @@ RSpec.describe Clicksign::ErrorHandler do
         begin
           described_class.call(
             mock_response(429, json_body('rate limited'), headers: {
-                            'x-ratelimit-remaining' => '0',
-                            'x-ratelimit-reset' => '1700000000',
-                          }),
+              'x-ratelimit-remaining' => '0',
+              'x-ratelimit-reset' => '1700000000',
+            }),
           )
         rescue Clicksign::RateLimitError => e
           err = e

@@ -133,8 +133,8 @@ module Clicksign
         modules, jsonapi = types.partition { |t| t.is_a?(Module) }
         if modules.any? && jsonapi.any?
           raise ArgumentError,
-                'cannot mix Module with JSON:API ' \
-                'include types — use with_includes for sideload'
+            'cannot mix Module with JSON:API ' \
+            'include types — use with_includes for sideload'
         end
         if modules.any?
           modules.each { |mod| super(mod) }
@@ -193,8 +193,8 @@ module Clicksign
         return if invalid.empty?
 
         raise ArgumentError,
-              'JSON:API include types must be String or Symbol, ' \
-              "got: #{invalid.map(&:class).uniq.join(', ')}"
+          'JSON:API include types must be String or Symbol, ' \
+          "got: #{invalid.map(&:class).uniq.join(', ')}"
       end
 
       private
@@ -212,8 +212,8 @@ module Clicksign
 
         loop do
           raw    = client.get(endpoint,
-                              params: base.merge('page[number]' => page,
-                                                 'page[size]' => per))
+            params: base.merge('page[number]' => page,
+              'page[size]' => per))
           parsed = JsonApi::Parser.parse(raw)
           items  = parsed[:data].map { |item| build_instance(item) }
           yield items
@@ -236,6 +236,8 @@ module Clicksign
       end
 
       def build_instance(data, parent_id: nil)
+        raise NotFoundError, 'API returned null data' if data.nil?
+
         instance = allocate
         instance.send(:load_data, data, parent_id: parent_id)
         instance
@@ -261,7 +263,10 @@ module Clicksign
         ),
       )
       parsed = JsonApi::Parser.parse(raw)
-      load_data(parsed[:data].first, parent_id: @_parent_id)
+      data   = parsed[:data].first
+      raise NotFoundError, 'API returned null data' if data.nil?
+
+      load_data(data, parent_id: @_parent_id)
       self
     end
 
@@ -273,7 +278,10 @@ module Clicksign
     def reload
       raw    = self.class.client.get("#{base_path}/#{@id}")
       parsed = JsonApi::Parser.parse(raw)
-      load_data(parsed[:data].first, parent_id: @_parent_id)
+      data   = parsed[:data].first
+      raise NotFoundError, 'API returned null data' if data.nil?
+
+      load_data(data, parent_id: @_parent_id)
       self
     end
 

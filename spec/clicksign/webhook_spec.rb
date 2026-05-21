@@ -12,7 +12,7 @@ RSpec.describe Clicksign::Webhook do
 
     it 'is deterministic for the same payload and secret' do
       expect(described_class.compute_signature(payload,
-                                               secret: secret)).to eq(valid_signature)
+        secret: secret)).to eq(valid_signature)
     end
 
     it 'differs when the payload changes' do
@@ -30,7 +30,7 @@ RSpec.describe Clicksign::Webhook do
     context 'with a valid signature' do
       it 'returns true' do
         expect(described_class.verify_signature!(payload, valid_signature,
-                                                 secret: secret)).to be(true)
+          secret: secret)).to be(true)
       end
     end
 
@@ -46,7 +46,7 @@ RSpec.describe Clicksign::Webhook do
       it 'raises WebhookSignatureError' do
         expect do
           described_class.verify_signature!('{"tampered":true}', valid_signature,
-                                            secret: secret)
+            secret: secret)
         end.to raise_error(Clicksign::WebhookSignatureError)
       end
     end
@@ -55,7 +55,23 @@ RSpec.describe Clicksign::Webhook do
       it 'raises WebhookSignatureError' do
         expect do
           described_class.verify_signature!(payload, valid_signature,
-                                            secret: 'wrong-secret')
+            secret: 'wrong-secret')
+        end.to raise_error(Clicksign::WebhookSignatureError)
+      end
+    end
+
+    context 'with nil signature (missing header)' do
+      it 'raises WebhookSignatureError instead of TypeError' do
+        expect do
+          described_class.verify_signature!(payload, nil, secret: secret)
+        end.to raise_error(Clicksign::WebhookSignatureError)
+      end
+    end
+
+    context 'with empty string signature' do
+      it 'raises WebhookSignatureError' do
+        expect do
+          described_class.verify_signature!(payload, '', secret: secret)
         end.to raise_error(Clicksign::WebhookSignatureError)
       end
     end
@@ -64,22 +80,22 @@ RSpec.describe Clicksign::Webhook do
   describe '.verify_signature' do
     it 'returns true for a valid signature' do
       expect(described_class.verify_signature(payload, valid_signature,
-                                              secret: secret)).to be(true)
+        secret: secret)).to be(true)
     end
 
     it 'returns false for an invalid signature' do
       expect(described_class.verify_signature(payload, 'sha256=bad',
-                                              secret: secret)).to be(false)
+        secret: secret)).to be(false)
     end
 
     it 'returns false for a tampered payload' do
       expect(described_class.verify_signature('tampered', valid_signature,
-                                              secret: secret)).to be(false)
+        secret: secret)).to be(false)
     end
 
     it 'returns false for a wrong secret' do
       expect(described_class.verify_signature(payload, valid_signature,
-                                              secret: 'wrong')).to be(false)
+        secret: 'wrong')).to be(false)
     end
   end
 end
