@@ -75,7 +75,7 @@ RSpec.describe Clicksign::Resources::TemplateField do
           status: 200,
           body: single_resource(
             template_field_data(id: field_id, name: 'updated_name', kind: 'email',
-                                template_id: template_id),
+              template_id: template_id),
           ).to_json,
           headers: { 'Content-Type' => 'application/vnd.api+json' },
         )

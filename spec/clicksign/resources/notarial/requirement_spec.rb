@@ -165,7 +165,7 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
       it 'raises NotFoundError for an unknown id' do
         expect do
           described_class.retrieve('00000000-0000-0000-0000-000000000000',
-                                   envelope_id: envelope_id)
+            envelope_id: envelope_id)
         end.to raise_error(Clicksign::NotFoundError)
       end
     end
@@ -208,8 +208,8 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
           status: 200,
           body: single_resource(
             requirement_data(id: requirement_id, action: 'provide_evidence',
-                             envelope_id: envelope_id, document_id: document_id,
-                             signer_id: signer_id),
+              envelope_id: envelope_id, document_id: document_id,
+              signer_id: signer_id),
           ).to_json,
           headers: { 'Content-Type' => 'application/vnd.api+json' },
         )
@@ -285,6 +285,35 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
         expect(WebMock).to have_requested(:get, doc_requirements_url)
           .with(query: { 'filter[requirement.action]' => 'agree' })
       end
+    end
+  end
+
+  describe '.list_for_document without envelope context' do
+    let(:doc_requirements_url) do
+      "#{JsonApiFixtures::BASE_URL}/documents/#{document_id}/relationships/requirements"
+    end
+
+    let(:requirement_no_envelope) do
+      requirement_data(
+        id: requirement_id,
+        action: 'agree',
+        document_id: document_id,
+        signer_id: signer_id,
+      )
+    end
+
+    before do
+      stub_request(:get, doc_requirements_url)
+        .to_return(
+          status: 200,
+          body: collection_resource([requirement_no_envelope]).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'returns requirements with nil envelope_id when relationship is absent' do
+      reqs = described_class.list_for_document(document_id)
+      expect(reqs.first.envelope_id).to be_nil
     end
   end
 

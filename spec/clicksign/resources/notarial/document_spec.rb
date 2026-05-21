@@ -10,7 +10,7 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
 
   let(:document) do
     document_data(id: document_id, filename: 'contract.pdf', status: 'draft',
-                  envelope_id: envelope_id)
+      envelope_id: envelope_id)
   end
 
   describe 'resource configuration' do
@@ -87,7 +87,7 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
     let(:events_url) { "#{document_url}/events" }
     let(:event) do
       event_data(id: event_id, name: 'sign', envelope_id: envelope_id,
-                 document_id: document_id)
+        document_id: document_id)
     end
 
     before do
@@ -166,7 +166,7 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
       it 'raises NotFoundError' do
         expect do
           described_class.retrieve('00000000-0000-0000-0000-000000000000',
-                                   envelope_id: envelope_id)
+            envelope_id: envelope_id)
         end.to raise_error(Clicksign::NotFoundError)
       end
     end
@@ -210,7 +210,7 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
           status: 200,
           body: single_resource(
             document_data(id: document_id, filename: 'updated.pdf',
-                          envelope_id: envelope_id),
+              envelope_id: envelope_id),
           ).to_json,
           headers: { 'Content-Type' => 'application/vnd.api+json' },
         )

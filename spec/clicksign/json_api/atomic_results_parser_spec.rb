@@ -82,7 +82,7 @@ RSpec.describe Clicksign::JsonApi::AtomicResultsParser do
     context 'with a slot containing errors' do
       subject(:result) do
         described_class.parse(raw, envelope_id: envelope_id,
-                                   operations: [{ 'op' => 'remove' }]).first
+          operations: [{ 'op' => 'remove' }]).first
       end
 
       let(:raw) do

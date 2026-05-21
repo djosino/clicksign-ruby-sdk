@@ -108,12 +108,12 @@ RSpec.describe Clicksign::Resources::Template do
   describe '.create' do
     subject(:template) do
       described_class.create(name: 'New Template', content_base64: docx_content_base64,
-                             color: '#1474f5')
+        color: '#1474f5')
     end
 
     let(:created_template) do
       template_data(id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa', name: 'New Template',
-                    color: '#1474f5')
+        color: '#1474f5')
     end
 
     before do
