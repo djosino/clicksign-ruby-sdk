@@ -238,3 +238,76 @@ RSpec.describe 'Clicksign instrumentation integration' do
     end
   end
 end
+
+RSpec.describe 'BulkOperationsClient instrumentation integration' do
+  include JsonApiFixtures
+
+  subject(:bulk_client) do
+    Clicksign::JsonApi::BulkOperationsClient.new(
+      api_key: 'test-token',
+      base_url: JsonApiFixtures::BASE_URL,
+    )
+  end
+
+  let(:bulk_path) { '/envelopes/env-id/bulk_requirements' }
+  let(:bulk_url)  { "#{JsonApiFixtures::BASE_URL}#{bulk_path}" }
+  let(:body) do
+    { 'atomic:operations' => [{ 'op' => 'add', 'data' => { 'type' => 'requirements',
+                                                           'attributes' => {} } }] }
+  end
+  let(:json_headers) { { 'Content-Type' => 'application/vnd.api+json' } }
+  let(:success_body) { { 'atomic:results' => [{ 'data' => {} }] }.to_json }
+
+  after { Clicksign::Instrumentation.clear }
+
+  it 'publishes :request on a successful bulk post' do
+    stub_request(:post, bulk_url)
+      .to_return(status: 200, body: success_body, headers: json_headers)
+    events = []
+    Clicksign::Instrumentation.on(:request) { |e| events << e }
+
+    bulk_client.post(bulk_path, body: body)
+
+    expect(events.size).to eq(1)
+    expect(events.first).to include(method: :post, path: bulk_path, status: 200,
+                                    attempt: 1)
+    expect(events.first[:duration_ms]).to be_a(Float)
+  end
+
+  it 'publishes :request and :error on ValidationError' do
+    stub_request(:post, bulk_url)
+      .to_return(status: 422, body: { errors: [{ detail: 'invalid' }] }.to_json,
+                 headers: json_headers)
+    requests = []
+    errors = []
+    Clicksign::Instrumentation.on(:request) { |e| requests << e }
+    Clicksign::Instrumentation.on(:error) { |e| errors << e }
+
+    expect { bulk_client.post(bulk_path, body: body) }
+      .to raise_error(Clicksign::ValidationError)
+
+    expect(requests.first).to include(method: :post, status: 422)
+    expect(errors.first[:error]).to be_a(Clicksign::ValidationError)
+  end
+
+  it 'publishes :retry on timeout retry' do
+    retrying = Clicksign::JsonApi::BulkOperationsClient.new(
+      api_key: 'test-token',
+      base_url: JsonApiFixtures::BASE_URL,
+      max_retries: 1,
+    )
+    allow(retrying).to receive(:sleep)
+
+    stub_request(:post, bulk_url)
+      .to_raise(Net::ReadTimeout)
+      .to_return(status: 200, body: success_body, headers: json_headers)
+
+    retries = []
+    Clicksign::Instrumentation.on(:retry) { |e| retries << e }
+
+    retrying.post(bulk_path, body: body)
+
+    expect(retries.size).to eq(1)
+    expect(retries.first).to include(method: :post, path: bulk_path, attempt: 1)
+  end
+end

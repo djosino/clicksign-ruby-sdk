@@ -73,6 +73,44 @@ RSpec.describe Clicksign::Resource do
     it 'prefers an explicit resource_type over inference' do
       expect(klass.resource_type).to eq('widgets')
     end
+
+    it 'defaults to resources when the class is anonymous (name is nil)' do
+      anonymous = Class.new(described_class)
+
+      expect(anonymous.name).to be_nil
+      expect(anonymous.resource_type).to eq('resources')
+      expect(anonymous.endpoint).to eq('/resources')
+    end
+  end
+
+  describe '.list' do
+    include_context 'with clicksign configured'
+
+    let(:url) { "#{JsonApiFixtures::BASE_URL}/widgets" }
+    let(:json_headers) { { 'Content-Type' => 'application/vnd.api+json' } }
+    let(:body) do
+      {
+        'data' => [
+          { 'id' => '1', 'type' => 'widgets', 'attributes' => { 'name' => 'A' },
+            'relationships' => {} },
+        ],
+      }.to_json
+    end
+
+    before do
+      stub_request(:get, url)
+        .to_return(status: 200, body: body, headers: json_headers)
+    end
+
+    it 'returns an Array of instances' do
+      result = klass.list
+      expect(result).to be_an(Array)
+      expect(result).to all(be_a(klass))
+    end
+
+    it 'does not accept filter kwargs' do
+      expect { klass.list(status: 'draft') }.to raise_error(ArgumentError)
+    end
   end
 
   describe '.endpoint' do
@@ -127,19 +165,50 @@ RSpec.describe Clicksign::Resource do
       end
     end
 
-    describe '.include' do
+    describe '.with_includes' do
       it 'passes include param to the request' do
         stub_request(:get, url)
           .with(query: { 'include' => 'owner,tags' })
           .to_return(status: 200, body: body.to_json, headers: json_headers)
 
-        klass.include('owner', 'tags').to_a
+        klass.with_includes('owner', 'tags').to_a
         expect(WebMock).to have_requested(:get,
                                           url).with(query: { 'include' => 'owner,tags' })
       end
 
       it 'returns a QueryProxy' do
-        expect(klass.include('owner')).to be_a(Clicksign::Resource::QueryProxy)
+        expect(klass.with_includes('owner')).to be_a(Clicksign::Resource::QueryProxy)
+      end
+    end
+
+    describe '.include' do
+      it 'delegates JSON:API types to with_includes' do
+        stub_request(:get, url)
+          .with(query: { 'include' => 'owner' })
+          .to_return(status: 200, body: body.to_json, headers: json_headers)
+
+        klass.include('owner').to_a
+        expect(WebMock).to have_requested(:get, url).with(query: { 'include' => 'owner' })
+      end
+
+      it 'mixes Ruby modules without shadowing Module#include' do
+        mod = Module.new do
+          def self.included(base)
+            base.define_method(:from_mixin) { true }
+          end
+        end
+
+        sub = Class.new(klass) { include mod }
+
+        expect(sub.included_modules).to include(mod)
+        expect(sub.new.from_mixin).to be(true)
+      end
+
+      it 'raises when mixing Module with JSON:API include types' do
+        mod = Module.new
+
+        expect { klass.include(mod, 'owner') }
+          .to raise_error(ArgumentError, /cannot mix Module/)
       end
     end
 
@@ -206,20 +275,31 @@ RSpec.describe Clicksign::Resource do
     let(:url)          { "#{JsonApiFixtures::BASE_URL}/widgets" }
     let(:json_headers) { { 'Content-Type' => 'application/vnd.api+json' } }
 
-    def page_body(*ids)
-      { 'data' => ids.map do |n|
-        { 'id' => "id-#{n}", 'type' => 'widgets',
-          'attributes' => { 'name' => "Widget #{n}" } }
-      end }.to_json
+    # links_next: :omit (no links key), nil (last page), or URL string
+    def page_body(*ids, links_next: :omit)
+      body = {
+        'data' => ids.map do |n|
+          { 'id' => "id-#{n}", 'type' => 'widgets',
+            'attributes' => { 'name' => "Widget #{n}" } }
+        end,
+      }
+      body['links'] = { 'next' => links_next } unless links_next == :omit
+      body.to_json
     end
 
     before do
+      params = '?page%5Bnumber%5D=2&page%5Bsize%5D=2'
+
       stub_request(:get, url)
         .with(query: { 'page[number]' => '1', 'page[size]' => '2' })
-        .to_return(status: 200, body: page_body(1, 2), headers: json_headers)
+        .to_return(status: 200,
+                   body: page_body(1, 2,
+                                   links_next: "#{url}#{params}"),
+                   headers: json_headers)
       stub_request(:get, url)
         .with(query: { 'page[number]' => '2', 'page[size]' => '2' })
-        .to_return(status: 200, body: page_body(3), headers: json_headers)
+        .to_return(status: 200, body: page_body(3,
+                                                links_next: nil), headers: json_headers)
     end
 
     describe '.auto_paging_each' do
@@ -290,7 +370,24 @@ RSpec.describe Clicksign::Resource do
       end
     end
 
-    context 'when the last page is exactly full' do
+    context 'when the last page is exactly full and links.next is null' do
+      before do
+        stub_request(:get, url)
+          .with(query: { 'page[number]' => '1', 'page[size]' => '3' })
+          .to_return(status: 200, body: page_body(1, 2, 3, links_next: nil),
+                     headers: json_headers)
+      end
+
+      it 'does not fetch another page' do
+        names = []
+        klass.per(3).auto_paging_each { |w| names << w.name }
+        expect(names).to eq(['Widget 1', 'Widget 2', 'Widget 3'])
+        expect(WebMock).not_to have_requested(:get, url)
+          .with(query: { 'page[number]' => '2', 'page[size]' => '3' })
+      end
+    end
+
+    context 'when the API omits links (legacy heuristic)' do
       before do
         stub_request(:get, url)
           .with(query: { 'page[number]' => '1', 'page[size]' => '3' })
@@ -300,7 +397,7 @@ RSpec.describe Clicksign::Resource do
           .to_return(status: 200, body: page_body, headers: json_headers)
       end
 
-      it 'makes one extra request to confirm exhaustion' do
+      it 'makes one extra request when the last page has exactly per items' do
         names = []
         klass.per(3).auto_paging_each { |w| names << w.name }
         expect(names).to eq(['Widget 1', 'Widget 2', 'Widget 3'])

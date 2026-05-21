@@ -112,5 +112,23 @@ RSpec.describe Clicksign::JsonApi::Parser do
         expect(result[:included]).to eq([])
       end
     end
+
+    context 'when links are present' do
+      it 'exposes links for pagination' do
+        raw = {
+          'data' => [],
+          'links' => { 'next' => 'https://api.example.com/widgets?page[number]=2' },
+        }
+        result = described_class.parse(raw)
+
+        expect(result[:links]).to eq(raw['links'])
+      end
+
+      it 'sets links to nil when the key is absent' do
+        result = described_class.parse({ 'data' => [] })
+
+        expect(result[:links]).to be_nil
+      end
+    end
   end
 end
