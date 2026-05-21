@@ -15,9 +15,13 @@ module Clicksign
         self
       end
 
-      def include(*types)
+      def with_includes(*types)
         @builder.include(*types)
         self
+      end
+
+      def include(*types)
+        with_includes(*types)
       end
 
       def order(field)
@@ -90,10 +94,10 @@ module Clicksign
         @endpoint || "/#{resource_type}"
       end
 
-      def list(**filters)
-        return fetch_list({}) if filters.empty?
-
-        filter(**filters).to_a
+      # Returns the first page with no query chain.
+      # Use +filter+ for filters, sort, pagination.
+      def list
+        fetch_list({})
       end
 
       def retrieve(id)
@@ -118,8 +122,26 @@ module Clicksign
         QueryProxy.new(self, JsonApi::QueryBuilder.new.filter(**params))
       end
 
-      def include(*types)
+      # JSON:API sideload — use +with_includes+;
+      # +include+ also accepts +Module+ for Ruby mixins.
+      def with_includes(*types)
+        validate_jsonapi_include_types!(types)
         QueryProxy.new(self, JsonApi::QueryBuilder.new.include(*types))
+      end
+
+      def include(*types)
+        modules, jsonapi = types.partition { |t| t.is_a?(Module) }
+        if modules.any? && jsonapi.any?
+          raise ArgumentError,
+                'cannot mix Module with JSON:API ' \
+                'include types — use with_includes for sideload'
+        end
+        if modules.any?
+          modules.each { |mod| super(mod) }
+          return self
+        end
+
+        with_includes(*types)
       end
 
       def order(field)
@@ -164,6 +186,17 @@ module Clicksign
         Thread.current[:clicksign_client] || Clicksign.client
       end
 
+      def validate_jsonapi_include_types!(types)
+        raise ArgumentError, 'at least one include type is required' if types.empty?
+
+        invalid = types.reject { |t| t.is_a?(String) || t.is_a?(Symbol) }
+        return if invalid.empty?
+
+        raise ArgumentError,
+              'JSON:API include types must be String or Symbol, ' \
+              "got: #{invalid.map(&:class).uniq.join(', ')}"
+      end
+
       private
 
       def fetch_list(params)
@@ -178,15 +211,28 @@ module Clicksign
         page = 1
 
         loop do
-          raw   = client.get(endpoint,
-                             params: base.merge('page[number]' => page,
-                                                'page[size]' => per))
-          items = JsonApi::Parser.parse(raw)[:data].map { |item| build_instance(item) }
+          raw    = client.get(endpoint,
+                              params: base.merge('page[number]' => page,
+                                                 'page[size]' => per))
+          parsed = JsonApi::Parser.parse(raw)
+          items  = parsed[:data].map { |item| build_instance(item) }
           yield items
-          break if items.size < per
+          break unless more_pages?(parsed, items, per)
 
           page += 1
         end
+      end
+
+      def more_pages?(parsed, items, per)
+        links = parsed[:links]
+        unless links.nil?
+          next_link = links['next']
+          return false if next_link.nil? || next_link.to_s.empty?
+
+          return true
+        end
+
+        items.size >= per
       end
 
       def build_instance(data, parent_id: nil)
@@ -196,6 +242,8 @@ module Clicksign
       end
 
       def infer_resource_type
+        return 'resources' if name.nil? || name.empty?
+
         "#{name.split('::').last
               .gsub(/([A-Z]+)([A-Z][a-z])/, '\1_\2')
               .gsub(/([a-z\d])([A-Z])/, '\1_\2')
@@ -239,11 +287,10 @@ module Clicksign
 
     def method_missing(name, *args, &block)
       key = name.to_s.delete_suffix('=')
-      if @_attributes&.key?(key)
-        name.to_s.end_with?('=') ? @_attributes[key] = args.first : @_attributes[key]
-      else
-        super
-      end
+      return super unless @_attributes&.key?(key)
+
+      @_attributes[key] = args.first if name.to_s.end_with?('=')
+      @_attributes[key]
     end
 
     def respond_to_missing?(name, include_private = false)

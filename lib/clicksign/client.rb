@@ -6,6 +6,8 @@ require 'json'
 
 module Clicksign
   class Client
+    include RequestInstrumentation
+
     HEADERS = {
       'Content-Type' => 'application/vnd.api+json',
       'Accept' => 'application/vnd.api+json',
@@ -69,23 +71,15 @@ module Clicksign
         raise unless e.retryable? && attempts <= @max_retries
 
         delay = RetryBackoff.delay(attempts)
-        Instrumentation.publish(:retry, {
-                                  method: request.method.downcase.to_sym,
-                                  path: resource_path(uri),
-                                  attempt: attempts,
-                                  max_retries: @max_retries,
-                                  error: e,
-                                  wait_ms: (delay * 1000).round,
-                                })
+        publish_retry(request, uri, attempts, e, delay)
         sleep(delay)
         retry
       end
     end
 
     def execute_once(request, uri, attempt: 1)
-      start = Process.clock_gettime(Process::CLOCK_MONOTONIC)
-      context = { method: request.method.downcase.to_sym, path: resource_path(uri),
-                  attempt: attempt }
+      start   = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+      context = request_context(request, uri, attempt)
       response = http_request(request, uri)
       handle_response(response, context, start)
     rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
@@ -102,38 +96,16 @@ module Clicksign
     end
 
     def handle_response(response, context, start)
-      duration = elapsed_ms(start)
-      status   = response.code.to_i
+      _response, status, duration = publish_http_outcome(response, context, start)
       begin
         ErrorHandler.call(response)
       rescue Error => e
-        publish_event(:request, context, status: status, duration_ms: duration)
-        publish_event(:error, context, error: e, status: status, duration_ms: duration)
+        publish_http_error(context, e, status, duration)
         raise
       end
-      publish_event(:request, context, status: status, duration_ms: duration)
       return nil if response.body.nil? || response.body.empty?
 
       JSON.parse(response.body)
-    end
-
-    def handle_network_error(error, context, duration)
-      err = TimeoutError.new(error.message)
-      publish_event(:error, context, error: err, status: nil, duration_ms: duration)
-      raise err, error.message, error.backtrace
-    end
-
-    def publish_event(type, context, extra)
-      Instrumentation.publish(type, context.merge(extra))
-    end
-
-    def elapsed_ms(start)
-      ((Process.clock_gettime(Process::CLOCK_MONOTONIC) - start) * 1000).round(1)
-    end
-
-    def resource_path(uri)
-      base = URI.parse(@base_url).path
-      uri.path.delete_prefix(base)
     end
   end
 end

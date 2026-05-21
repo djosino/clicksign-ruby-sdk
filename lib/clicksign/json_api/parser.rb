@@ -15,7 +15,9 @@ module Clicksign
                    .select { |item| item.is_a?(Hash) && item['type'] }
                    .map { |item| build(item) }
 
-        { data: data, included: included }
+        links = raw['links'] if raw.key?('links')
+
+        { data: data, included: included, links: links }
       end
 
       def self.build(item)

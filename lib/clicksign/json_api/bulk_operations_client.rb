@@ -7,6 +7,8 @@ require 'json'
 module Clicksign
   module JsonApi
     class BulkOperationsClient
+      include RequestInstrumentation
+
       HEADERS = {
         'Content-Type' => 'application/vnd.api+json',
         'Accept' => 'application/vnd.api+json',
@@ -23,22 +25,12 @@ module Clicksign
       end
 
       def post(path, body:)
-        response = perform_post(path, body)
-        parsed = parse_response_body(response) || {}
-
-        return parsed if parsed.key?('atomic:results')
-
-        ErrorHandler.call(response)
-        parsed
-      end
-
-      private
-
-      def perform_post(path, body)
         uri     = build_uri(path)
         request = build_request(uri, body)
         execute_with_retry(request, uri)
       end
+
+      private
 
       def build_request(uri, body)
         request = Net::HTTP::Post.new(uri, headers)
@@ -50,19 +42,38 @@ module Clicksign
         attempts = 0
         begin
           attempts += 1
-          safe_http_post(request, uri)
+          execute_once(request, uri, attempt: attempts)
         rescue Clicksign::TimeoutError => e
           raise unless e.retryable? && attempts <= @max_retries
 
-          sleep(Clicksign::RetryBackoff.delay(attempts))
+          delay = RetryBackoff.delay(attempts)
+          publish_retry(request, uri, attempts, e, delay)
+          sleep(delay)
           retry
         end
       end
 
-      def safe_http_post(request, uri)
-        http_post(request, uri)
+      def execute_once(request, uri, attempt: 1)
+        start   = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+        context = request_context(request, uri, attempt)
+        response = http_post(request, uri)
+        _response, status, duration = publish_http_outcome(response, context, start)
+        handle_bulk_body(response, context, status, duration)
       rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
-        raise TimeoutError, e.message, e.backtrace
+        handle_network_error(e, context, start)
+      end
+
+      def handle_bulk_body(response, context, status, duration)
+        parsed = parse_response_body(response) || {}
+        return parsed if parsed.key?('atomic:results')
+
+        begin
+          ErrorHandler.call(response)
+        rescue Error => e
+          publish_http_error(context, e, status, duration)
+          raise
+        end
+        parsed
       end
 
       def http_post(request, uri)
@@ -70,9 +81,8 @@ module Clicksign
                         use_ssl: uri.scheme == 'https',
                         open_timeout: @open_timeout,
                         read_timeout: @read_timeout,
-                        write_timeout: @write_timeout) do |http|
-          http.request(request)
-        end
+                        write_timeout: @write_timeout,
+                        &proc { |http| http.request(request) })
       end
 
       def headers
