@@ -7,6 +7,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.6] — 2026-05-21
+
+### Added
+
+- GitHub Actions workflow `release.yml` — push em `release/*` roda testes (Ruby 3.0–3.4), RuboCop, publica a gem no RubyGems (versão lida de `REVISION`) e cria tag `vX.Y.Z`
+
+---
+
+## [0.1.5] — 2026-05-21
+
+### Added
+
+- `Event.create_add_image` — payload pré-montado para comprovante JPEG (`title`, `occurred_at`, `content_base64`)
+- `Event.create_custom` — eventos `token_email` / `token_sms` com validação de `kind` (`ArgumentError` antes da request se inválido); atributos opcionais omitidos via `.compact`
+- `Event#update`, `#delete` e `#reload` levantam `NotImplementedError` — API expõe apenas `GET` (list) e `POST` (create)
+
+### Fixed
+
+- `Webhook.verify_signature!` — assinatura nil/vazia levanta `WebhookSignatureError` em vez de `TypeError`
+- `ErrorHandler#extract_message` — erros JSON:API sem `detail`/`title` retornam `response.message` em vez de string vazia
+- `Resource` — `build_instance(nil)`, `update` e `reload` levantam `NotFoundError` quando a API retorna `data: null` (evita `NoMethodError` opaco)
+- `BulkOperationsClient` — JSON inválido em resposta 2xx levanta `Clicksign::Error` explícito em vez de retornar `{}` silencioso
+- `Instrumentation` — callbacks protegidos por `Mutex`; `on`/`publish` thread-safe; `publish` itera sobre cópia da lista de callbacks
+- `QueryBuilder#include` — chamadas sucessivas a `with_includes`/`include` acumulam e deduplicam tipos (antes a última chamada sobrescrevia as anteriores)
+
+### Changed
+
+- README: aviso sobre `api_key` nil (erro só na primeira request — preferir `ENV.fetch`); fórmula exata do backoff full jitter; seção de eventos com `create_add_image`, `create_custom` e `create` (baixo nível)
+- `docs/SPEC.md` — tabela de tipos de `Event` com atributos obrigatórios/opcionais; listagens aninhadas documentadas via `Envelope.list_*`
+
+---
+
+## [0.1.4] — 2026-05-20
+
+### Added
+
+- `docs/cookbook/07-list-and-filter.md` — guia `list` vs `filter` vs auto-pagination
+- `docs/cookbook/08-production-limitations.md` — connection pool, Fibers e thread safety
+
+### Changed
+
+- README, `docs/ARCHITECTURE.md`, `docs/OBSERVABILITY.md` e `docs/TROUBLESHOOTING.md` — alinhados a `list` sem args, `links.next` e `with_includes`
+
+---
+
 ## [0.1.3] — 2026-05-20
 
 ### Added
@@ -14,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Clicksign::RetryBackoff` — backoff exponencial com **full jitter**, compartilhado por `Client` e `BulkOperationsClient`
 - `Configuration#logger` — log opcional de erros em callbacks de instrumentação
 - Arquivo `REVISION` como fonte única da versão da gem
-- `docs/cookbook/` — receitas de retries, bulk requirements, webhooks, multi-cliente, list vs filter e limitações de produção
+- `docs/cookbook/` — receitas de retries, bulk requirements, webhooks e multi-cliente
 - `docs/TROUBLESHOOTING.md` — guia sintoma → causa → correção
 - `docs/ARCHITECTURE.md` — diagramas (Mermaid) e camadas da gem
 - `docs/OBSERVABILITY.md` — hooks, logs, métricas e exemplo OpenTelemetry
