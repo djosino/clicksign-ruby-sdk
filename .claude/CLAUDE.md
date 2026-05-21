@@ -82,9 +82,23 @@ Clicksign.on_error   { |e| }  # e: { method:, path:, status:, error:, duration_m
 - `BulkOperationsClient` retenta apenas `TimeoutError`, não `ServerError` — comportamento intencional documentado em spec
 - `Resource.include` com Module → `super`; com String/Symbol → `with_includes`; mistura → `ArgumentError`
 - `infer_resource_type` tem guard `return 'resources' if name.nil?` — classes anônimas sem `resource_type` explícito
-- `fetch_auto_pages` usa `links['next']` quando presente — evita requests extras desnecessários
+- `fetch_auto_pages` usa `links['next']` quando presente — evita requests extras desnecessários; `links: {}` (sem chave `next`) também para
 - Callbacks de instrumentação são isolados com `rescue StandardError`; erros logados via `config.logger&.warn`
 - `Thread.current[:clicksign_client]` incompatível com Fiber-based runtimes (Falcon/async-ruby)
+- `Webhook.verify_signature!` com `signature: nil` levanta `WebhookSignatureError`, não `TypeError` — guard em `secure_compare?`
+- `build_instance(nil)` levanta `NotFoundError` — API pode retornar `{ data: null }` válido em JSON:API; guard em `build_instance` e nos `load_data` diretos em `update`/`reload`
+- `ErrorHandler.extract_from_json`: quando todos os errors items não têm `detail` nem `title`, `join('')` retornava `""` — corrigido para fallback em `response.message`
+- `BulkOperationsClient#parse_response_body`: JSON inválido em 2xx agora levanta `Clicksign::Error` explícito em vez de retornar `nil` silencioso
+- `Instrumentation.@callbacks` protegido por `Mutex` — `on` e `publish` são thread-safe; `publish` faz `.dup` para evitar race condition durante iteração
+- `QueryProxy` muta `@builder` in-place ao encadear — referência guardada acumula todos os params da chain; design intencional, mas surpreendente se proxy for reutilizado
+- `Requirement.list_for_document/list_for_signer` não passa `parent_id` — `requirement.envelope_id` retorna `nil` quando API não inclui relacionamento `envelope` nesses endpoints; comportamento esperado e documentado em spec
+- `api_key: nil` não levanta erro no `configure` nem no `Client.new` — o `AuthenticationError` só aparece na primeira request; usar `ENV.fetch` para detectar ausência no boot
+- `Event` não suporta `delete`/`reload`/`update` — API só expõe `GET` (list) e `POST` (create); os três métodos levantam `NotImplementedError`
+- `Event.create(envelope_id:, document_id:, **attributes)` — método base genérico; helpers `create_add_image` e `create_custom` delegam para ele com payload montado e `kind` validado via `CUSTOM_KINDS`
+- `Event.create_add_image` envia `content_base64` no nível de `attributes`, e `title`/`occurred_at` dentro de `data:`
+- `Event.create_custom` valida `kind` (ArgumentError antes da request) e usa `.compact` para omitir `signer_email`/`signer_phone_number` quando nil
+- `QueryBuilder.include` acumula tipos em chamadas sucessivas (não sobrescreve); deduplica automaticamente
+- `build_uri` com `path` contendo query string existente sobrescreve essa query — callers devem sempre passar params via hash; nunca embutir query no path
 
 ## Comments
 

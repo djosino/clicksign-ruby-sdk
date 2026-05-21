@@ -78,7 +78,7 @@ RSpec.describe Clicksign::Resources::Notarial::SignatureWatcher do
 
     it 'returns the watcher matching the given id' do
       expect(described_class.retrieve(watcher_id,
-                                      envelope_id: envelope_id).id).to eq(watcher_id)
+        envelope_id: envelope_id).id).to eq(watcher_id)
     end
 
     context 'when the watcher does not exist' do
@@ -94,7 +94,7 @@ RSpec.describe Clicksign::Resources::Notarial::SignatureWatcher do
       it 'raises NotFoundError' do
         expect do
           described_class.retrieve('00000000-0000-0000-0000-000000000000',
-                                   envelope_id: envelope_id)
+            envelope_id: envelope_id)
         end.to raise_error(Clicksign::NotFoundError)
       end
     end

@@ -198,7 +198,7 @@ RSpec.describe Clicksign::Resources::Webhook do
 
     it 'updates and returns the record', :aggregate_failures do
       updated = webhook.update(endpoint: 'https://example.com/updated',
-                               status: 'inactive')
+        status: 'inactive')
 
       expect(updated).to be_a(described_class)
       expect(updated.endpoint).to eq('https://example.com/updated')
@@ -215,6 +215,30 @@ RSpec.describe Clicksign::Resources::Webhook do
 
     it 'deletes the webhook without raising' do
       expect { webhook.delete }.not_to raise_error
+    end
+  end
+
+  describe '#reload' do
+    let(:webhook) { described_class.send(:build_instance, active_webhook) }
+
+    before do
+      stub_request(:get, webhook_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            webhook_data(id: webhook_id, endpoint: 'https://example.com/webhook',
+              events: %w[sign close], status: 'inactive'),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'refreshes attributes from the API' do
+      expect(webhook.reload.status).to eq('inactive')
+    end
+
+    it 'returns self' do
+      expect(webhook.reload).to equal(webhook)
     end
   end
 end

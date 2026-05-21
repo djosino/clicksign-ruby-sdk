@@ -35,7 +35,7 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
         {
           'atomic:results' => [
             { 'data' => requirement_data(id: requirement_id, action: 'agree',
-                                         role: 'sign') },
+              role: 'sign') },
           ],
         }
       end
@@ -43,7 +43,7 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
       before { stub_bulk_post(response_body: api_response) }
 
       it 'returns a successful Response with the created requirement',
-         :aggregate_failures do
+        :aggregate_failures do
         expect(response).to be_a(described_class::Response)
         expect(response.envelope_id).to eq(envelope_id)
         expect(response).to be_success
@@ -75,7 +75,7 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
       subject(:response) do
         described_class.create(envelope_id: envelope_id) do |ops|
           ops.add_provide_evidence(signer_id: signer_id, document_id: document_id,
-                                   auth: 'email')
+            auth: 'email')
         end
       end
 
@@ -84,7 +84,7 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
           response_body: {
             'atomic:results' => [
               { 'data' => requirement_data(id: requirement_id,
-                                           action: 'provide_evidence', auth: 'email') },
+                action: 'provide_evidence', auth: 'email') },
             ],
           },
         )
@@ -101,7 +101,7 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
       subject(:response) do
         described_class.create(envelope_id: envelope_id) do |ops|
           ops.add_rubricate(signer_id: signer_id, document_id: document_id, pages: 'all',
-                            kind: 'initials')
+            kind: 'initials')
         end
       end
 
@@ -135,7 +135,7 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
         described_class.create(envelope_id: envelope_id) do |ops|
           ops.add_agree(signer_id: signer_id, document_id: document_id, role: 'sign')
           ops.add_provide_evidence(signer_id: signer_id, document_id: document_id,
-                                   auth: 'email')
+            auth: 'email')
         end
       end
 
@@ -146,9 +146,9 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
           response_body: {
             'atomic:results' => [
               { 'data' => requirement_data(id: requirement_id, action: 'agree',
-                                           role: 'sign') },
+                role: 'sign') },
               { 'data' => requirement_data(id: second_requirement_id,
-                                           action: 'provide_evidence', auth: 'email') },
+                action: 'provide_evidence', auth: 'email') },
             ],
           },
         )

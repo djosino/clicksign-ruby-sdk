@@ -118,6 +118,38 @@ RSpec.describe Clicksign::Client do
     end
   end
 
+  describe 'nil api_key behavior' do
+    let(:nil_key_client) do
+      described_class.new(api_key: nil, base_url: JsonApiFixtures::BASE_URL)
+    end
+
+    it 'raises AuthenticationError from the API (no early validation)' do
+      stub_request(:get, url)
+        .to_return(
+          status: 401,
+          body: { errors: [{ detail: 'invalid token' }] }.to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+
+      expect { nil_key_client.get(path) }.to raise_error(Clicksign::AuthenticationError)
+    end
+  end
+
+  describe '#get with path containing existing query string' do
+    it 'overwrites existing query string — callers must use params hash' do
+      url_with_qs = "#{JsonApiFixtures::BASE_URL}#{path}"
+      stub_request(:get, url_with_qs)
+        .with(query: { 'baz' => 'qux' })
+        .to_return(status: 200, body: body.to_json, headers: json_headers)
+
+      # path with existing ?foo=bar — foo=bar is dropped, only params hash survives
+      client.get("#{path}?foo=bar", params: { 'baz' => 'qux' })
+
+      expect(WebMock).to have_requested(:get, url_with_qs)
+        .with(query: { 'baz' => 'qux' })
+    end
+  end
+
   describe 'TimeoutError' do
     it 'raises TimeoutError on Net::OpenTimeout' do
       stub_request(:get, url).to_raise(Net::OpenTimeout)
@@ -143,7 +175,7 @@ RSpec.describe Clicksign::Client do
     let(:error_body) { { errors: [{ detail: 'server error' }] }.to_json }
     let(:retrying_client) do
       described_class.new(api_key: 'test-token', base_url: JsonApiFixtures::BASE_URL,
-                          max_retries: 2)
+        max_retries: 2)
     end
 
     before { allow(retrying_client).to receive(:sleep) }

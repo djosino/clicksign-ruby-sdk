@@ -15,7 +15,7 @@ RSpec.describe Clicksign::Resources::Folder do
 
   let(:child_folder) do
     folder_data(id: child_id, name: 'Child Folder',
-                path: '/Root Folder', in_root: false)
+      path: '/Root Folder', in_root: false)
   end
 
   describe 'resource configuration' do
@@ -125,7 +125,7 @@ RSpec.describe Clicksign::Resources::Folder do
     context 'nested under a parent folder' do
       let(:nested_folder) do
         folder_data(id: child_id, name: 'Child Folder',
-                    path: '/Root Folder', in_root: false)
+          path: '/Root Folder', in_root: false)
       end
 
       before do
@@ -144,7 +144,7 @@ RSpec.describe Clicksign::Resources::Folder do
         expect(child.id).to eq(child_id)
         expect(WebMock).to(have_requested(:post, folders_url).with do |req|
           JSON.parse(req.body).dig('data', 'relationships', 'folder', 'data',
-                                   'id') == parent_id
+            'id') == parent_id
         end)
       end
     end
@@ -180,6 +180,29 @@ RSpec.describe Clicksign::Resources::Folder do
 
     it 'deletes without raising' do
       expect { instance.delete }.not_to raise_error
+    end
+  end
+
+  describe '#reload' do
+    let(:instance) { described_class.send(:build_instance, root_folder) }
+
+    before do
+      stub_request(:get, folder_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            folder_data(id: folder_id, name: 'Reloaded Folder', path: '/', in_root: true),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'refreshes attributes from the API' do
+      expect(instance.reload.name).to eq('Reloaded Folder')
+    end
+
+    it 'returns self' do
+      expect(instance.reload).to equal(instance)
     end
   end
 

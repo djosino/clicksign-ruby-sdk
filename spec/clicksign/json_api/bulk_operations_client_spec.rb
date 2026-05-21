@@ -134,8 +134,9 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
           .to_return(status: 200, body: 'not-json', headers: {})
       end
 
-      it 'does not raise JSON::ParserError' do
-        expect { client.post(path, body: body) }.not_to raise_error
+      it 'raises Clicksign::Error with descriptive message' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::Error, /Invalid JSON response/)
       end
     end
   end
@@ -168,7 +169,7 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
       stub_request(:post, url)
         .to_raise(Net::ReadTimeout)
         .to_return(status: 200, body: success_body.to_json,
-                   headers: { 'Content-Type' => 'application/json' })
+          headers: { 'Content-Type' => 'application/json' })
 
       result = retrying_client.post(path, body: body)
       expect(result).to eq(success_body)
@@ -180,7 +181,7 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
 
       stub_request(:post, url)
         .to_return(status: 500, body: error_body,
-                   headers: { 'Content-Type' => 'application/json' })
+          headers: { 'Content-Type' => 'application/json' })
 
       expect { retrying_client.post(path, body: body) }
         .to raise_error(Clicksign::ServerError)

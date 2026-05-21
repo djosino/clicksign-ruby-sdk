@@ -140,6 +140,13 @@ RSpec.describe Clicksign::Resource do
     end
   end
 
+  describe '.build_instance with nil data' do
+    it 'raises NotFoundError instead of NoMethodError when API returns null data' do
+      expect { klass.send(:build_instance, nil) }
+        .to raise_error(Clicksign::NotFoundError, /null data/)
+    end
+  end
+
   describe 'QueryProxy chain methods' do
     include_context 'with clicksign configured'
 
@@ -173,7 +180,7 @@ RSpec.describe Clicksign::Resource do
 
         klass.with_includes('owner', 'tags').to_a
         expect(WebMock).to have_requested(:get,
-                                          url).with(query: { 'include' => 'owner,tags' })
+          url).with(query: { 'include' => 'owner,tags' })
       end
 
       it 'returns a QueryProxy' do
@@ -293,13 +300,13 @@ RSpec.describe Clicksign::Resource do
       stub_request(:get, url)
         .with(query: { 'page[number]' => '1', 'page[size]' => '2' })
         .to_return(status: 200,
-                   body: page_body(1, 2,
-                                   links_next: "#{url}#{params}"),
-                   headers: json_headers)
+          body: page_body(1, 2,
+            links_next: "#{url}#{params}"),
+          headers: json_headers)
       stub_request(:get, url)
         .with(query: { 'page[number]' => '2', 'page[size]' => '2' })
         .to_return(status: 200, body: page_body(3,
-                                                links_next: nil), headers: json_headers)
+          links_next: nil), headers: json_headers)
     end
 
     describe '.auto_paging_each' do
@@ -375,7 +382,7 @@ RSpec.describe Clicksign::Resource do
         stub_request(:get, url)
           .with(query: { 'page[number]' => '1', 'page[size]' => '3' })
           .to_return(status: 200, body: page_body(1, 2, 3, links_next: nil),
-                     headers: json_headers)
+            headers: json_headers)
       end
 
       it 'does not fetch another page' do
@@ -414,13 +421,35 @@ RSpec.describe Clicksign::Resource do
         stub_request(:get, url)
           .with(query: { 'page[number]' => '2', 'page[size]' => '2' })
           .to_return(status: 500, body: { errors: [{ detail: 'server error' }] }.to_json,
-                     headers: json_headers)
+            headers: json_headers)
       end
 
       it 'raises ServerError on the failing page' do
         expect do
           klass.per(2).auto_paging_each { |_| }
         end.to raise_error(Clicksign::ServerError)
+      end
+    end
+
+    context 'when the API returns links: {} (present but without next key)' do
+      before do
+        body = {
+          'data' => [{ 'id' => 'id-1', 'type' => 'widgets',
+                       'attributes' => { 'name' => 'Widget 1' } }],
+          'links' => {},
+        }.to_json
+
+        stub_request(:get, url)
+          .with(query: { 'page[number]' => '1', 'page[size]' => '1' })
+          .to_return(status: 200, body: body, headers: json_headers)
+      end
+
+      it 'stops pagination without fetching a second page' do
+        names = []
+        klass.per(1).auto_paging_each { |w| names << w.name }
+        expect(names).to eq(['Widget 1'])
+        expect(WebMock).not_to have_requested(:get, url)
+          .with(query: { 'page[number]' => '2', 'page[size]' => '1' })
       end
     end
   end

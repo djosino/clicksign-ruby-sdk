@@ -95,6 +95,8 @@ A API usa o header `Authorization: <seu-token>` **sem** o prefixo `Bearer`.
 
 > **Segurança:** não commite tokens no código. Use variáveis de ambiente ou cofre de secrets (Rails credentials, etc.).
 
+> **`api_key` é obrigatório em runtime:** o SDK não valida a presença do token no boot. Se `api_key` for `nil`, nenhum erro é levantado no `configure` — o `AuthenticationError` só aparece na primeira request HTTP. Use `ENV.fetch('CLICKSIGN_API_KEY')` (em vez de `ENV[]`) para detectar a ausência da variável no startup da aplicação.
+
 > **Multi-conta / multi-tenant:** se cada requisição pode usar credenciais diferentes (SaaS, workers por cliente), prefira [`Clicksign::Services`](#multi-conta-e-cliente-instantiável) em vez da config global.
 
 Para testar interativamente no console da gem:
@@ -188,7 +190,7 @@ Com `max_retries > 0`, o client reexecuta a requisição em erros **transitório
 - `Clicksign::RateLimitError`
 - `Clicksign::ServerError` (5xx)
 
-Backoff exponencial com **full jitter** (espera aleatória entre `0` e o teto da tentativa: `0,5s`, `1s`, `2s`… até **30s**), para evitar thundering herd quando muitos clientes falham ao mesmo tempo. Após esgotar as retentativas, a exceção original é relançada.
+Backoff exponencial com **full jitter**: espera aleatória uniforme em `[0, teto)` onde o teto cresce como `0.5s × 2^(tentativa-1)` (0,5s → 1s → 2s…) com cap de **30s**. O zero é possível — o jitter distribui a espera para evitar thundering herd. Após esgotar as retentativas, a exceção original é relançada.
 
 ```ruby
 Clicksign.configure do |c|
@@ -462,12 +464,33 @@ Envelope.list_events(envelope.id)
 # Eventos de um documento
 Document.list_events(document.id, envelope_id: envelope.id)
 
-# Criar evento customizado no documento
-Event.create_for_document(
+# Criar evento de imagem no documento (comprovante JPEG)
+Event.create_add_image(
+  envelope_id: envelope.id,
+  document_id: document.id,
+  title: 'Comprovante de identidade',
+  occurred_at: Time.now.iso8601,
+  content_base64: 'data:image/jpeg;base64,...'
+)
+
+# Criar evento customizado — token_email ou token_sms
+Event.create_custom(
+  envelope_id: envelope.id,
+  document_id: document.id,
+  kind: 'token_email',           # ou 'token_sms'
+  occurred_at: Time.now.iso8601,
+  signer_name: 'Maria Silva',
+  signer_email: 'maria@empresa.com',
+  # signer_phone_number: '11988887777'  # obrigatório quando kind: 'token_sms'
+)
+
+# API de baixo nível — qualquer name customizado
+Event.create(
   envelope_id: envelope.id,
   document_id: document.id,
   name: 'custom',
-  data: { description: 'Etapa interna concluída' }
+  data: { kind: 'token_email', signer_name: 'Maria Silva',
+          signer_email: 'maria@empresa.com', occurred_at: Time.now.iso8601 }
 )
 ```
 

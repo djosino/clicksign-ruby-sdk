@@ -98,7 +98,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
   describe ':request event' do
     it 'is published on a successful request' do
       stub_request(:get, url).to_return(status: 200, body: body.to_json,
-                                        headers: json_headers)
+        headers: json_headers)
       events = []
       Clicksign::Instrumentation.on(:request) { |e| events << e }
 
@@ -112,7 +112,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
     it 'is published even when the request raises an error' do
       stub_request(:get, url)
         .to_return(status: 404, body: { errors: [{ detail: 'not found' }] }.to_json,
-                   headers: json_headers)
+          headers: json_headers)
       events = []
       Clicksign::Instrumentation.on(:request) { |e| events << e }
 
@@ -125,7 +125,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
     it 'is published with the raised exception on HTTP error' do
       stub_request(:get, url)
         .to_return(status: 404, body: { errors: [{ detail: 'not found' }] }.to_json,
-                   headers: json_headers)
+          headers: json_headers)
       errors = []
       Clicksign::Instrumentation.on(:error) { |e| errors << e }
 
@@ -149,7 +149,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
   describe ':retry event' do
     let(:retrying_client) do
       Clicksign::Client.new(api_key: 'test-token', base_url: JsonApiFixtures::BASE_URL,
-                            max_retries: 1)
+        max_retries: 1)
     end
 
     before { allow(retrying_client).to receive(:sleep) }
@@ -157,7 +157,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
     it 'is published before each retry with backoff metadata' do
       stub_request(:get, url)
         .to_return({ status: 500, body: error_body, headers: json_headers },
-                   { status: 200, body: body.to_json, headers: json_headers })
+          { status: 200, body: body.to_json, headers: json_headers })
       retries = []
       Clicksign::Instrumentation.on(:retry) { |e| retries << e }
 
@@ -174,7 +174,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
     it 'publishes one request event per attempt' do
       stub_request(:get, url)
         .to_return({ status: 500, body: error_body, headers: json_headers },
-                   { status: 200, body: body.to_json, headers: json_headers })
+          { status: 200, body: body.to_json, headers: json_headers })
       request_events = []
       Clicksign::Instrumentation.on(:request) { |e| request_events << e }
 
@@ -195,7 +195,7 @@ RSpec.describe 'Clicksign instrumentation integration' do
 
     it 'registers callbacks via the top-level helpers' do
       stub_request(:get, url).to_return(status: 200, body: body.to_json,
-                                        headers: json_headers)
+        headers: json_headers)
       received = nil
       Clicksign.on_request { |e| received = e }
 
@@ -270,14 +270,14 @@ RSpec.describe 'BulkOperationsClient instrumentation integration' do
 
     expect(events.size).to eq(1)
     expect(events.first).to include(method: :post, path: bulk_path, status: 200,
-                                    attempt: 1)
+      attempt: 1)
     expect(events.first[:duration_ms]).to be_a(Float)
   end
 
   it 'publishes :request and :error on ValidationError' do
     stub_request(:post, bulk_url)
       .to_return(status: 422, body: { errors: [{ detail: 'invalid' }] }.to_json,
-                 headers: json_headers)
+        headers: json_headers)
     requests = []
     errors = []
     Clicksign::Instrumentation.on(:request) { |e| requests << e }

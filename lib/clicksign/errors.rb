@@ -5,7 +5,7 @@ module Clicksign
     attr_reader :status_code, :request_id, :response_body, :response_headers
 
     def initialize(message = nil, status_code: nil, request_id: nil,
-                   response_body: nil, response_headers: {})
+      response_body: nil, response_headers: {})
       super(message)
       @status_code      = status_code
       @request_id       = request_id

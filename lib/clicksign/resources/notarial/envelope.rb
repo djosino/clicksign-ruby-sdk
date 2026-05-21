@@ -27,23 +27,23 @@ module Clicksign
 
         def self.list_events(envelope_id, **filters)
           nested_list(envelope_id, nested_type: 'events', as: Event,
-                                   params: filter_params(**filters))
+            params: filter_params(**filters))
         end
 
         def self.list_documents(envelope_id, **filters)
           nested_list(envelope_id, nested_type: 'documents', as: Document,
-                                   params: filter_params(**filters))
+            params: filter_params(**filters))
         end
 
         def self.list_signers(envelope_id, **filters)
           nested_list(envelope_id, nested_type: 'signers', as: Signer,
-                                   params: filter_params(**filters))
+            params: filter_params(**filters))
         end
 
         def self.list_signature_watchers(envelope_id, **filters)
           nested_list(envelope_id, nested_type: 'signature_watchers',
-                                   as: SignatureWatcher,
-                                   params: filter_params(**filters))
+            as: SignatureWatcher,
+            params: filter_params(**filters))
         end
 
         def self.list_requirements(envelope_id, **filters)

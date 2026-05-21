@@ -21,7 +21,7 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
     end
   end
 
-  describe '.create_for_document' do
+  describe '.create' do
     let(:created_event) do
       event_data(
         id: event_id,
@@ -41,7 +41,7 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
     end
 
     it 'returns an Event instance', :aggregate_failures do
-      event = described_class.create_for_document(
+      event = described_class.create(
         envelope_id: envelope_id,
         document_id: document_id,
         name: 'read',
@@ -53,7 +53,7 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
     end
 
     it 'posts to the correct nested URL' do
-      described_class.create_for_document(
+      described_class.create(
         envelope_id: envelope_id,
         document_id: document_id,
         name: 'read',
@@ -83,7 +83,7 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
       end
 
       it 'exposes the data attribute', :aggregate_failures do
-        event = described_class.create_for_document(
+        event = described_class.create(
           envelope_id: envelope_id,
           document_id: document_id,
           name: 'sign',
@@ -107,7 +107,7 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
 
       it 'raises NotFoundError' do
         expect do
-          described_class.create_for_document(
+          described_class.create(
             envelope_id: envelope_id,
             document_id: document_id,
             name: 'read',
@@ -128,13 +128,160 @@ RSpec.describe Clicksign::Resources::Notarial::Event do
 
       it 'raises ValidationError' do
         expect do
-          described_class.create_for_document(
+          described_class.create(
             envelope_id: envelope_id,
             document_id: document_id,
             name: 'invalid_name',
           )
         end.to raise_error(Clicksign::ValidationError, 'name is invalid')
       end
+    end
+  end
+
+  describe '.create_add_image' do
+    let(:created_event) do
+      event_data(id: event_id, name: 'add_image', envelope_id: envelope_id,
+        document_id: document_id)
+    end
+
+    before do
+      stub_request(:post, events_url)
+        .to_return(status: 201, body: single_resource(created_event).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' })
+    end
+
+    it 'returns an Event instance', :aggregate_failures do
+      event = described_class.create_add_image(
+        envelope_id: envelope_id,
+        document_id: document_id,
+        title: 'Comprovante',
+        occurred_at: '2026-01-01T10:00:00-03:00',
+        content_base64: 'data:image/jpeg;base64,/9j/4AAQ==',
+      )
+
+      expect(event).to be_a(described_class)
+      expect(event.name).to eq('add_image')
+    end
+
+    it 'posts name=add_image with content_base64 and data payload' do
+      described_class.create_add_image(
+        envelope_id: envelope_id,
+        document_id: document_id,
+        title: 'Comprovante',
+        occurred_at: '2026-01-01T10:00:00-03:00',
+        content_base64: 'data:image/jpeg;base64,/9j/4AAQ==',
+      )
+
+      expect(WebMock).to(have_requested(:post, events_url).with do |req|
+        attrs = JSON.parse(req.body).dig('data', 'attributes')
+        attrs['name'] == 'add_image' &&
+          attrs['content_base64'] == 'data:image/jpeg;base64,/9j/4AAQ==' &&
+          attrs.dig('data', 'title') == 'Comprovante' &&
+          attrs.dig('data', 'occurred_at') == '2026-01-01T10:00:00-03:00'
+      end)
+    end
+  end
+
+  describe '.create_custom' do
+    let(:created_event) do
+      event_data(id: event_id, name: 'custom', envelope_id: envelope_id,
+        document_id: document_id)
+    end
+
+    before do
+      stub_request(:post, events_url)
+        .to_return(status: 201, body: single_resource(created_event).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' })
+    end
+
+    context 'with kind: token_email' do
+      it 'returns an Event instance' do
+        event = described_class.create_custom(
+          envelope_id: envelope_id,
+          document_id: document_id,
+          kind: 'token_email',
+          occurred_at: '2026-01-01T10:00:00-03:00',
+          signer_name: 'Maria Silva',
+          signer_email: 'maria@example.com',
+        )
+
+        expect(event).to be_a(described_class)
+      end
+
+      it 'posts name=custom with correct data payload' do
+        described_class.create_custom(
+          envelope_id: envelope_id,
+          document_id: document_id,
+          kind: 'token_email',
+          occurred_at: '2026-01-01T10:00:00-03:00',
+          signer_name: 'Maria Silva',
+          signer_email: 'maria@example.com',
+        )
+
+        expect(WebMock).to(have_requested(:post, events_url).with do |req|
+          data = JSON.parse(req.body).dig('data', 'attributes', 'data')
+          data['kind'] == 'token_email' &&
+            data['signer_name'] == 'Maria Silva' &&
+            data['signer_email'] == 'maria@example.com' &&
+            !data.key?('signer_phone_number')
+        end)
+      end
+    end
+
+    context 'with kind: token_sms' do
+      it 'posts signer_phone_number and omits signer_email when nil' do
+        described_class.create_custom(
+          envelope_id: envelope_id,
+          document_id: document_id,
+          kind: 'token_sms',
+          occurred_at: '2026-01-01T10:00:00-03:00',
+          signer_name: 'João Costa',
+          signer_phone_number: '11988887777',
+        )
+
+        expect(WebMock).to(have_requested(:post, events_url).with do |req|
+          data = JSON.parse(req.body).dig('data', 'attributes', 'data')
+          data['kind'] == 'token_sms' &&
+            data['signer_phone_number'] == '11988887777' &&
+            !data.key?('signer_email')
+        end)
+      end
+    end
+
+    context 'with invalid kind' do
+      it 'raises ArgumentError before making a request' do
+        expect do
+          described_class.create_custom(
+            envelope_id: envelope_id,
+            document_id: document_id,
+            kind: 'invalid',
+            occurred_at: '2026-01-01T10:00:00-03:00',
+            signer_name: 'Maria Silva',
+          )
+        end.to raise_error(ArgumentError, /kind must be one of/)
+
+        expect(WebMock).not_to have_requested(:post, events_url)
+      end
+    end
+  end
+
+  describe 'unsupported instance operations' do
+    let(:event) do
+      described_class.send(:build_instance,
+        event_data(id: event_id, name: 'sign',
+          envelope_id: envelope_id))
+    end
+
+    it '#update raises NotImplementedError' do
+      expect { event.update(name: 'x') }.to raise_error(NotImplementedError)
+    end
+
+    it '#delete raises NotImplementedError' do
+      expect { event.delete }.to raise_error(NotImplementedError)
+    end
+
+    it '#reload raises NotImplementedError' do
+      expect { event.reload }.to raise_error(NotImplementedError)
     end
   end
 

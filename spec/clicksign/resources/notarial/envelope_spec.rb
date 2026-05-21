@@ -246,7 +246,7 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
   describe '.create' do
     let(:created_envelope) do
       envelope_data(id: 'cccccccc-cccc-cccc-cccc-cccccccccccc', name: 'Spec Envelope',
-                    status: 'draft')
+        status: 'draft')
     end
 
     before do
@@ -291,7 +291,7 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
         expect(envelope.folder_id).to eq(folder_id)
         expect(WebMock).to(have_requested(:post, envelopes_url).with do |req|
           JSON.parse(req.body).dig('data', 'relationships', 'folder', 'data',
-                                   'id') == folder_id
+            'id') == folder_id
         end)
       end
     end
@@ -363,8 +363,8 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
     context 'when folder relationship is present' do
       let(:envelope) do
         described_class.send(:build_instance,
-                             envelope_data(id: envelope_id, name: 'With Folder',
-                                           folder_id: folder_id))
+          envelope_data(id: envelope_id, name: 'With Folder',
+            folder_id: folder_id))
       end
 
       it 'returns the folder id' do
@@ -415,6 +415,31 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
     end
   end
 
+  describe '#reload' do
+    let(:envelope) { described_class.send(:build_instance, draft_envelope) }
+
+    before do
+      stub_request(:get, envelope_url)
+        .to_return(
+          status: 200,
+          body: single_resource(
+            envelope_data(id: envelope_id, name: 'Reloaded Envelope', status: 'running'),
+          ).to_json,
+          headers: { 'Content-Type' => 'application/vnd.api+json' },
+        )
+    end
+
+    it 'refreshes attributes from the API' do
+      reloaded = envelope.reload
+      expect(reloaded.name).to eq('Reloaded Envelope')
+      expect(reloaded.status).to eq('running')
+    end
+
+    it 'returns self' do
+      expect(envelope.reload).to equal(envelope)
+    end
+  end
+
   describe '.activate' do
     before do
       stub_request(:post, "#{envelope_url}/activate")
@@ -449,7 +474,7 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
 
     it 'includes email_customization in the request body when provided' do
       described_class.notify(envelope_id, message: 'Please sign',
-                                          subject: 'Sign now', body: 'Hello')
+        subject: 'Sign now', body: 'Hello')
 
       expect(WebMock).to(have_requested(:post, notifications_url).with do |req|
         attrs = JSON.parse(req.body).dig('data', 'attributes')
@@ -533,7 +558,7 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
     let(:signers_url) { "#{envelope_url}/signers" }
     let(:signer) do
       signer_data(id: signer_id, name: 'Jane', email: 'jane@example.com',
-                  envelope_id: envelope_id)
+        envelope_id: envelope_id)
     end
 
     before do
@@ -582,7 +607,7 @@ RSpec.describe Clicksign::Resources::Notarial::Envelope do
     let(:events_url) { "#{envelope_url}/events" }
     let(:event) do
       event_data(id: '66666666-6666-6666-6666-666666666666', name: 'sign',
-                 envelope_id: envelope_id)
+        envelope_id: envelope_id)
     end
 
     before do

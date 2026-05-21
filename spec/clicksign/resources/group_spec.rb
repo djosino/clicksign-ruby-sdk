@@ -76,7 +76,7 @@ RSpec.describe Clicksign::Resources::Group do
     it 'requests sorted results' do
       described_class.order('name').to_a
       expect(WebMock).to have_requested(:get,
-                                        groups_url).with(query: { 'sort' => 'name' })
+        groups_url).with(query: { 'sort' => 'name' })
     end
   end
 

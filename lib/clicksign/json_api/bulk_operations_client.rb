@@ -15,7 +15,7 @@ module Clicksign
       }.freeze
 
       def initialize(api_key:, base_url:, open_timeout: 2, read_timeout: 10,
-                     write_timeout: 10, max_retries: 0)
+        write_timeout: 10, max_retries: 0)
         @api_key       = api_key
         @base_url      = base_url
         @open_timeout  = open_timeout
@@ -78,11 +78,11 @@ module Clicksign
 
       def http_post(request, uri)
         Net::HTTP.start(uri.host, uri.port,
-                        use_ssl: uri.scheme == 'https',
-                        open_timeout: @open_timeout,
-                        read_timeout: @read_timeout,
-                        write_timeout: @write_timeout,
-                        &proc { |http| http.request(request) })
+          use_ssl: uri.scheme == 'https',
+          open_timeout: @open_timeout,
+          read_timeout: @read_timeout,
+          write_timeout: @write_timeout,
+          &proc { |http| http.request(request) })
       end
 
       def headers
@@ -97,8 +97,8 @@ module Clicksign
         return nil if response.body.nil? || response.body.empty?
 
         JSON.parse(response.body)
-      rescue JSON::ParserError
-        nil
+      rescue JSON::ParserError => e
+        raise Error, "Invalid JSON response from bulk operations endpoint: #{e.message}"
       end
     end
   end

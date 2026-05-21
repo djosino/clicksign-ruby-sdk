@@ -26,7 +26,7 @@ RSpec.describe Clicksign::JsonApi::Operations::BulkRequirement do
 
     it 'returns self for chaining' do
       expect(ops.add_agree(signer_id: signer_id, document_id: document_id,
-                           role: 'sign')).to be(ops)
+        role: 'sign')).to be(ops)
     end
 
     context 'with missing signer_id' do
@@ -49,7 +49,7 @@ RSpec.describe Clicksign::JsonApi::Operations::BulkRequirement do
   describe '#add_provide_evidence' do
     it 'builds an add operation with auth' do
       ops.add_provide_evidence(signer_id: signer_id, document_id: document_id,
-                               auth: 'email')
+        auth: 'email')
 
       expect(ops.entries.last['data']['attributes']).to eq(
         'action' => 'provide_evidence',
@@ -61,7 +61,7 @@ RSpec.describe Clicksign::JsonApi::Operations::BulkRequirement do
       it 'raises ArgumentError' do
         expect do
           ops.add_provide_evidence(signer_id: signer_id, document_id: document_id,
-                                   auth: '')
+            auth: '')
         end.to raise_error(ArgumentError, 'auth is required')
       end
     end

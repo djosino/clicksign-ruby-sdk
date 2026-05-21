@@ -50,7 +50,8 @@ module Clicksign
       errors = body['errors']
       return response.message unless errors.is_a?(Array)
 
-      errors.filter_map { |e| e['detail'] || e['title'] }.join(', ')
+      result = errors.filter_map { |e| e['detail'] || e['title'] }.join(', ')
+      result.empty? ? response.message : result
     end
   end
 end

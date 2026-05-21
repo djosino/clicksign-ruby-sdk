@@ -3,7 +3,7 @@
 module Clicksign
   class Services
     def initialize(api_key:, environment: :production, base_url: nil,
-                   open_timeout: 2, read_timeout: 10, write_timeout: 10, max_retries: 0)
+      open_timeout: 2, read_timeout: 10, write_timeout: 10, max_retries: 0)
       resolved_url = base_url || resolve_environment(environment)
       @client = Client.new(
         api_key: api_key,

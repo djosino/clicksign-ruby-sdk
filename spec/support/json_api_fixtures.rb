@@ -63,9 +63,9 @@ module JsonApiFixtures
   end
 
   def envelope_data(id:, name:, status: 'draft', folder_id: nil,
-                    remind_interval: nil, block_after_refusal: false,
-                    auto_close: false, locale: 'pt-BR', metadata: nil,
-                    default_subject: nil, default_message: nil, **attributes)
+    remind_interval: nil, block_after_refusal: false,
+    auto_close: false, locale: 'pt-BR', metadata: nil,
+    default_subject: nil, default_message: nil, **attributes)
     base = {
       'name' => name,
       'status' => status,
@@ -114,10 +114,10 @@ module JsonApiFixtures
   end
 
   def signer_data(id:, name:, email:, envelope_id: nil, phone_number: nil,
-                  birthday: nil, has_documentation: false, documentation: nil,
-                  refusable: false, location_required_enabled: false,
-                  communicate_events: nil, signature_host: nil, group: nil,
-                  **attributes)
+    birthday: nil, has_documentation: false, documentation: nil,
+    refusable: false, location_required_enabled: false,
+    communicate_events: nil, signature_host: nil, group: nil,
+    **attributes)
     relationships = {}
     if envelope_id
       relationships['envelope'] =
@@ -209,7 +209,7 @@ module JsonApiFixtures
   end
 
   def signature_watcher_data(id:, email:, kind:, envelope_id: nil,
-                             attach_documents_enabled: false, **attributes)
+    attach_documents_enabled: false, **attributes)
     relationships = {}
     if envelope_id
       relationships['envelope'] =
@@ -245,7 +245,7 @@ module JsonApiFixtures
   end
 
   def requirement_data(id:, action:, envelope_id: nil, document_id: nil, signer_id: nil,
-                       **attributes)
+    **attributes)
     relationships = requirement_relationships(
       envelope_id: envelope_id,
       document_id: document_id,
@@ -292,8 +292,8 @@ module JsonApiFixtures
   end
 
   def membership_data(id:, role:, user_id:, consumption_accessible: false,
-                      tracking_accessible: false, folder_management_accessible: false,
-                      **attributes)
+    tracking_accessible: false, folder_management_accessible: false,
+    **attributes)
     {
       'id' => id,
       'type' => 'memberships',

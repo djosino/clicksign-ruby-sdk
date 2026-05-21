@@ -27,13 +27,13 @@ module Clicksign
 
     def publish_retry(request, uri, attempt, error, delay)
       Instrumentation.publish(:retry, {
-                                method: request.method.downcase.to_sym,
-                                path: resource_path(uri),
-                                attempt: attempt,
-                                max_retries: @max_retries,
-                                error: error,
-                                wait_ms: (delay * 1000).round,
-                              })
+        method: request.method.downcase.to_sym,
+        path: resource_path(uri),
+        attempt: attempt,
+        max_retries: @max_retries,
+        error: error,
+        wait_ms: (delay * 1000).round,
+      })
     end
 
     def handle_network_error(error, context, start)

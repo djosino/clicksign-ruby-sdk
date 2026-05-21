@@ -33,7 +33,7 @@ module Clicksign
         end
 
         def add_rubricate(signer_id:, document_id:, pages: nil, rubric_field: nil,
-                          kind: nil)
+          kind: nil)
           validate_ids!(signer_id, document_id)
           if pages.nil? && rubric_field.nil?
             raise ArgumentError, 'pages or rubric_field is required'

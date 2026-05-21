@@ -27,7 +27,7 @@ module Clicksign
 
         def update(**)
           raise NotImplementedError,
-                'SignatureWatcher does not support update (route: except: [:update])'
+            'SignatureWatcher does not support update (route: except: [:update])'
         end
 
         def envelope_id

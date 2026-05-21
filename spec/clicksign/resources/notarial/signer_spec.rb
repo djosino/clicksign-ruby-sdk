@@ -10,7 +10,7 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
 
   let(:signer) do
     signer_data(id: signer_id, name: 'Spec Signer', email: 'spec@example.com',
-                envelope_id: envelope_id)
+      envelope_id: envelope_id)
   end
 
   describe 'resource configuration' do
@@ -145,7 +145,7 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
 
     it 'returns the signer matching the given id' do
       expect(described_class.retrieve(signer_id,
-                                      envelope_id: envelope_id).id).to eq(signer_id)
+        envelope_id: envelope_id).id).to eq(signer_id)
     end
 
     context 'when the signer does not exist' do
@@ -161,7 +161,7 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
       it 'raises NotFoundError' do
         expect do
           described_class.retrieve('00000000-0000-0000-0000-000000000000',
-                                   envelope_id: envelope_id)
+            envelope_id: envelope_id)
         end.to raise_error(Clicksign::NotFoundError)
       end
     end
@@ -201,7 +201,7 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
     it '.notify posts to the correct URL without raising' do
       expect do
         described_class.notify(signer_id, envelope_id: envelope_id,
-                                          message: 'Please sign')
+          message: 'Please sign')
       end.not_to raise_error
     end
 
@@ -216,8 +216,8 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
 
     it 'includes email_customization in the request body when provided' do
       described_class.notify(signer_id, envelope_id: envelope_id,
-                                        message: 'Please sign',
-                                        subject: 'Sign now', body: 'Hello')
+        message: 'Please sign',
+        subject: 'Sign now', body: 'Hello')
 
       expect(WebMock).to(have_requested(:post, notifications_url).with do |req|
         attrs = JSON.parse(req.body).dig('data', 'attributes')
@@ -227,7 +227,7 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
 
     it 'omits email_customization when no kwargs given' do
       described_class.notify(signer_id, envelope_id: envelope_id,
-                                        message: 'Please sign')
+        message: 'Please sign')
 
       expect(WebMock).to(have_requested(:post, notifications_url).with do |req|
         attrs = JSON.parse(req.body).dig('data', 'attributes')
@@ -250,9 +250,9 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
     context 'when built without parent_id (relationship path)' do
       let(:instance) do
         described_class.send(:build_instance,
-                             signer_data(id: signer_id, name: 'Jane Doe',
-                                         email: 'jane@example.com',
-                                         envelope_id: envelope_id))
+          signer_data(id: signer_id, name: 'Jane Doe',
+            email: 'jane@example.com',
+            envelope_id: envelope_id))
       end
 
       it 'returns the id from the envelope relationship' do
