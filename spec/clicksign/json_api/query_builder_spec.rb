@@ -7,7 +7,7 @@ RSpec.describe Clicksign::JsonApi::QueryBuilder do
     it 'converts symbol keys to filter[key] format' do
       builder.filter(status: 'draft', locale: 'pt-BR')
       expect(builder.to_params).to eq('filter[status]' => 'draft',
-                                      'filter[locale]' => 'pt-BR')
+        'filter[locale]' => 'pt-BR')
     end
 
     it 'accepts false values' do
@@ -29,6 +29,23 @@ RSpec.describe Clicksign::JsonApi::QueryBuilder do
     it 'handles a single type' do
       builder.include('folder')
       expect(builder.to_params).to eq('include' => 'folder')
+    end
+
+    it 'accumulates types across multiple calls instead of overwriting' do
+      builder.include('signers')
+      builder.include('documents')
+      expect(builder.to_params).to eq('include' => 'signers,documents')
+    end
+
+    it 'deduplicates types when called multiple times with same type' do
+      builder.include('signers')
+      builder.include('signers', 'documents')
+      expect(builder.to_params).to eq('include' => 'signers,documents')
+    end
+
+    it 'converts symbols to strings' do
+      builder.include(:signers, :documents)
+      expect(builder.to_params).to eq('include' => 'signers,documents')
     end
 
     it 'returns self for chaining' do

@@ -11,13 +11,17 @@ RSpec.describe Clicksign::Resources::AccessControlList do
     it 'has the correct resource type' do
       expect(described_class.resource_type).to eq('access_control_lists')
     end
+
+    it 'has the correct endpoint' do
+      expect(described_class.endpoint).to eq('/access_control_lists')
+    end
   end
 
   describe '.create' do
     before do
       stub_request(:post, acl_url)
         .to_return(status: 201, body: { data: { type: 'access_control_lists' } }.to_json,
-                   headers: { 'Content-Type' => 'application/vnd.api+json' })
+          headers: { 'Content-Type' => 'application/vnd.api+json' })
     end
 
     it 'returns without raising' do

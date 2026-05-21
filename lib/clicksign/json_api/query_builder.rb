@@ -13,7 +13,8 @@ module Clicksign
       end
 
       def include(*types)
-        @params['include'] = types.join(',')
+        existing = @params['include']&.split(',') || []
+        @params['include'] = (existing + types.map(&:to_s)).uniq.join(',')
         self
       end
 
