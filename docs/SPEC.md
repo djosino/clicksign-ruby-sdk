@@ -169,7 +169,15 @@ Baseado nas rotas da Clicksign API v3, namespace `:v3`.
 - `duplicate` — duplicar documento existente
 
 **Sub-resources:**
-- `GET/POST /envelopes/:id/documents/:id/events` → eventos do documento (`add_image`, `custom`)
+- `GET/POST /envelopes/:id/documents/:id/events` → `Event` — tipos suportados:
+
+| Tipo | SDK | Atributos obrigatórios | Atributos opcionais |
+|------|-----|------------------------|---------------------|
+| `add_image` | `Event.create_add_image(...)` | `title`, `occurred_at`, `content_base64` (JPEG) | — |
+| `custom` | `Event.create_custom(...)` | `kind` (`token_email`\|`token_sms`), `occurred_at`, `signer_name` | `signer_email` (token_email), `signer_phone_number` (token_sms) |
+| qualquer | `Event.create(name:, data:, ...)` | `name`, `data` | `content_base64` |
+
+`Event` não suporta `retrieve`, `update`, `delete` nem `reload` — API expõe apenas `GET` (list) e `POST` (create).
 
 ---
 

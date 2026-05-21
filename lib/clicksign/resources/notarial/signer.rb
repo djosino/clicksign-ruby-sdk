@@ -40,7 +40,7 @@ module Clicksign
 
         def update(**)
           raise NotImplementedError,
-                'Signer does not support update (route: except: [:update])'
+            'Signer does not support update (route: except: [:update])'
         end
 
         def base_path

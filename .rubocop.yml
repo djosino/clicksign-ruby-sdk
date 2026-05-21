@@ -186,3 +186,9 @@ RSpec/SpecFilePathFormat:
 
 RSpec/VerifiedDoubles:
   Enabled: false
+
+Layout/ArgumentAlignment:
+  EnforcedStyle: with_fixed_indentation
+
+Layout/ParameterAlignment:
+  EnforcedStyle: with_fixed_indentation
