@@ -44,7 +44,10 @@ module Clicksign
 
         def base_path
           eid = @_parent_id || envelope_id
-          raise Clicksign::Error, 'envelope_id is required for Requirement operations' if eid.nil?
+          if eid.nil?
+            raise Clicksign::Error,
+              'envelope_id is required for Requirement operations'
+          end
 
           "/envelopes/#{eid}/requirements"
         end
