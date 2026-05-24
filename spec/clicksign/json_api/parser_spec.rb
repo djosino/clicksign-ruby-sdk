@@ -44,6 +44,16 @@ RSpec.describe Clicksign::JsonApi::Parser do
       end
     end
 
+    context 'when raw is nil (client returned nil for empty-body response)' do
+      it 'returns empty data, included, and nil links without raising' do
+        result = described_class.parse(nil)
+
+        expect(result[:data]).to eq([])
+        expect(result[:included]).to eq([])
+        expect(result[:links]).to be_nil
+      end
+    end
+
     context 'when data is nil (empty response body parsed as hash)' do
       it 'returns an empty data array' do
         result = described_class.parse({ 'data' => nil })

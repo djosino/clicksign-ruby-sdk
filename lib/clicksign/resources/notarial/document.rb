@@ -28,7 +28,10 @@ module Clicksign
         end
 
         def base_path
-          "/envelopes/#{@_parent_id || envelope_id}/documents"
+          eid = @_parent_id || envelope_id
+          raise Clicksign::Error, 'envelope_id is required for Document operations' if eid.nil?
+
+          "/envelopes/#{eid}/documents"
         end
 
         def envelope_id

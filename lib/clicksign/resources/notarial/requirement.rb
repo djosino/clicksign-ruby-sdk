@@ -43,7 +43,10 @@ module Clicksign
         private_class_method :list_related
 
         def base_path
-          "/envelopes/#{@_parent_id || envelope_id}/requirements"
+          eid = @_parent_id || envelope_id
+          raise Clicksign::Error, 'envelope_id is required for Requirement operations' if eid.nil?
+
+          "/envelopes/#{eid}/requirements"
         end
 
         def envelope_id

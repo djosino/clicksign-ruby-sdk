@@ -83,7 +83,7 @@ module Clicksign
       response = http_request(request, uri)
       handle_response(response, context, start)
     rescue Net::OpenTimeout, Net::ReadTimeout, Errno::ECONNREFUSED => e
-      handle_network_error(e, context, elapsed_ms(start))
+      handle_network_error(e, context, start)
     end
 
     def http_request(request, uri)

@@ -112,6 +112,25 @@ RSpec.describe Clicksign::Resources::Notarial::SignatureWatcher do
     end
   end
 
+  describe '#base_path guard' do
+    context 'when envelope_id is unavailable (no parent_id, no relationship)' do
+      let(:watcher_no_envelope) do
+        {
+          'id' => watcher_id,
+          'type' => 'signature_watchers',
+          'attributes' => { 'email' => 'w@example.com', 'kind' => 'all_steps' },
+          'relationships' => {},
+        }
+      end
+
+      it 'raises Clicksign::Error on delete instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, watcher_no_envelope)
+        expect { instance.delete }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
+    end
+  end
+
   describe '#reload' do
     let(:instance) do
       described_class.send(:build_instance, watcher, parent_id: envelope_id)

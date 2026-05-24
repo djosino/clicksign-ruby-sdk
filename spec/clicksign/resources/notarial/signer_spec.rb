@@ -270,4 +270,23 @@ RSpec.describe Clicksign::Resources::Notarial::Signer do
       expect { instance.update(name: 'New Name') }.to raise_error(NotImplementedError)
     end
   end
+
+  describe '#base_path guard' do
+    context 'when envelope_id is unavailable (no parent_id, no relationship)' do
+      let(:signer_no_envelope) do
+        {
+          'id' => signer_id,
+          'type' => 'signers',
+          'attributes' => { 'name' => 'Test', 'email' => 'test@example.com' },
+          'relationships' => {},
+        }
+      end
+
+      it 'raises Clicksign::Error on delete instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, signer_no_envelope)
+        expect { instance.delete }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
+    end
+  end
 end

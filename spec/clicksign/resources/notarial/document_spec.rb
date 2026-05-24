@@ -237,6 +237,31 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
     end
   end
 
+  describe '#base_path guard' do
+    context 'when envelope_id is unavailable (no parent_id, no relationship)' do
+      let(:doc_no_envelope) do
+        {
+          'id' => document_id,
+          'type' => 'documents',
+          'attributes' => { 'filename' => 'test.pdf' },
+          'relationships' => {},
+        }
+      end
+
+      it 'raises Clicksign::Error on update instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, doc_no_envelope)
+        expect { instance.update(filename: 'new.pdf') }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
+
+      it 'raises Clicksign::Error on delete instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, doc_no_envelope)
+        expect { instance.delete }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
+    end
+  end
+
   describe '#envelope_id' do
     context 'when built with parent_id' do
       let(:instance) do

@@ -288,6 +288,31 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
     end
   end
 
+  describe '#base_path guard' do
+    context 'when envelope_id is unavailable (no parent_id, no relationship)' do
+      let(:req_no_envelope) do
+        {
+          'id' => requirement_id,
+          'type' => 'requirements',
+          'attributes' => { 'action' => 'agree' },
+          'relationships' => {},
+        }
+      end
+
+      it 'raises Clicksign::Error on update instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, req_no_envelope)
+        expect { instance.update(action: 'sign') }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
+
+      it 'raises Clicksign::Error on delete instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, req_no_envelope)
+        expect { instance.delete }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
+    end
+  end
+
   describe '.list_for_document without envelope context' do
     let(:doc_requirements_url) do
       "#{JsonApiFixtures::BASE_URL}/documents/#{document_id}/relationships/requirements"

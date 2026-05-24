@@ -4,6 +4,8 @@ module Clicksign
   module JsonApi
     module Parser
       def self.parse(raw)
+        return { data: [], included: [], links: nil } if raw.nil?
+
         raw_data = raw['data']
         data = case raw_data
                when Array then raw_data.map { |item| build(item) }

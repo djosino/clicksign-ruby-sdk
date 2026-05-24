@@ -75,6 +75,14 @@ RSpec.describe Clicksign::Webhook do
         end.to raise_error(Clicksign::WebhookSignatureError)
       end
     end
+
+    context 'with signature as Array (Rack multi-value header)' do
+      it 'raises WebhookSignatureError instead of accepting array representation' do
+        expect do
+          described_class.verify_signature!(payload, [valid_signature], secret: secret)
+        end.to raise_error(Clicksign::WebhookSignatureError)
+      end
+    end
   end
 
   describe '.verify_signature' do

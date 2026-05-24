@@ -22,7 +22,11 @@ module Clicksign
         end
 
         def base_path
-          "/envelopes/#{@_parent_id || envelope_id}/signature_watchers"
+          eid = @_parent_id || envelope_id
+          raise Clicksign::Error,
+            'envelope_id is required for SignatureWatcher operations' if eid.nil?
+
+          "/envelopes/#{eid}/signature_watchers"
         end
 
         def update(**)

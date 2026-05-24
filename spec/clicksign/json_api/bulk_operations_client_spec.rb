@@ -139,6 +139,19 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
           .to raise_error(Clicksign::Error, /Invalid JSON response/)
       end
     end
+
+    context 'when response is 204 No Content (empty body)' do
+      before do
+        stub_request(:post, url).to_return(status: 204, body: '')
+      end
+
+      let(:status) { 204 }
+      let(:response_body) { nil }
+
+      it 'returns empty hash without raising' do
+        expect(client.post(path, body: body)).to eq({})
+      end
+    end
   end
 
   describe 'timeout and retry behavior' do
