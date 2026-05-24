@@ -15,7 +15,7 @@ Gem::Specification.new do |spec|
 
   spec.required_ruby_version = '>= 3.0'
 
-  spec.files = Dir['lib/**/*.rb'] + ['README.md']
+  spec.files = Dir['lib/**/*.rb'] + ['README.md', 'REVISION']
   spec.metadata['source_code_uri']    = spec.homepage
   spec.metadata['changelog_uri']      = "#{spec.homepage}/blob/main/CHANGELOG.md"
   spec.metadata['bug_tracker_uri']    = "#{spec.homepage}/issues"

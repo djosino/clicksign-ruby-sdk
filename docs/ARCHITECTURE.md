@@ -147,6 +147,28 @@ sequenceDiagram
 
 ---
 
+## Recursos nested e contexto de envelope (`@_parent_id`)
+
+Recursos nested (Document, Signer, Requirement, SignatureWatcher) precisam do `envelope_id` do pai para montar `base_path` em operações de instância (`update`, `delete`, `reload`).
+
+O padrão adotado é `@_parent_id`: um atributo privado definido em `load_data` e propagado por `build_instance(data, parent_id: envelope_id)`.
+
+**Fluxo:**
+
+```
+Envelope.list_documents(id)
+  → Resource.nested_list(parent_id, ...)
+    → build_instance(item, parent_id: id)    # @_parent_id = envelope_id
+      → document.update(...)
+        → base_path → "/envelopes/#{@_parent_id}/documents"
+```
+
+**Fallback:** quando `@_parent_id` é nil (ex: instância construída via `list_for_document`), `base_path` tenta `relationships.dig('envelope', 'data', 'id')`. Se ambos forem nil, levanta `Clicksign::Error` com mensagem descritiva em vez de interpolar `nil` na URL.
+
+> **Limitação:** `Event` não suporta `retrieve`, `update`, `delete` nem `reload` — API expõe apenas `GET` (list) e `POST` (create). Esses métodos levantam `NotImplementedError`.
+
+---
+
 ## Stack
 
 | Tecnologia | Uso |
@@ -164,7 +186,7 @@ sequenceDiagram
 | **Sem connection pool** | Cada HTTP = `Net::HTTP.start` novo; em Puma de alta concorrência pode doer em latência/TCP |
 | **`Thread.current` em `Services#use`** | OK em Puma/Sidekiq; **não** confiável com Falcon, async-ruby ou Fibers filhos |
 
-Mitigações e cenários: [cookbook/08-production-limitations.md](cookbook/08-production-limitations.md).
+Mitigações e cenários: [examples/08-production-limitations.md](examples/08-production-limitations.md).
 
 ---
 
@@ -173,7 +195,7 @@ Mitigações e cenários: [cookbook/08-production-limitations.md](cookbook/08-pr
 | Tópico | Link |
 |--------|------|
 | Fluxo notarial | [WORKFLOW.md](WORKFLOW.md) |
-| Receitas | [cookbook/](cookbook/) |
+| Receitas | [examples/](examples/) |
 | Erros comuns | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) |
 | Logs e métricas | [OBSERVABILITY.md](OBSERVABILITY.md) |
 | Mapa de API | [SPEC.md](SPEC.md) |

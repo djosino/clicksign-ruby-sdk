@@ -37,7 +37,7 @@ module Clicksign
       end
 
       def build_requirement(data, envelope_id:)
-        return nil if data.nil? || data.empty?
+        return nil if data.nil? || (!data['id'] && !data['type'])
 
         Resources::Notarial::Requirement.send(
           :build_instance,

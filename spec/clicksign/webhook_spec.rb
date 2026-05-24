@@ -10,6 +10,18 @@ RSpec.describe Clicksign::Webhook do
       expect(valid_signature).to match(/\Asha256=[0-9a-f]{64}\z/)
     end
 
+    it 'raises ArgumentError when secret is empty string' do
+      expect do
+        described_class.compute_signature(payload, secret: '')
+      end.to raise_error(ArgumentError, /secret must not be empty/)
+    end
+
+    it 'raises ArgumentError when secret is nil' do
+      expect do
+        described_class.compute_signature(payload, secret: nil)
+      end.to raise_error(ArgumentError, /secret must not be empty/)
+    end
+
     it 'is deterministic for the same payload and secret' do
       expect(described_class.compute_signature(payload,
         secret: secret)).to eq(valid_signature)

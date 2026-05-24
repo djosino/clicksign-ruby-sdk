@@ -1,6 +1,6 @@
 # Troubleshooting — Clicksign Ruby SDK
 
-Guia **sintoma → causa provável → o que fazer**. Para exemplos de configuração, veja o [Cookbook](cookbook/) e o [README](../README.md).
+Guia **sintoma → causa provável → o que fazer**. Para exemplos de configuração, veja o [Cookbook](examples/) e o [README](../README.md).
 
 ---
 
@@ -52,7 +52,7 @@ Clicksign.configure do |c|
 end
 ```
 
-Gere um novo token no painel do ambiente correto. Em multi-tenant, confira o token **dentro** do bloco `use` ([04-multi-client](cookbook/04-multi-client.md)).
+Gere um novo token no painel do ambiente correto. Em multi-tenant, confira o token **dentro** do bloco `use` ([04-multi-client](examples/04-multi-client.md)).
 
 ---
 
@@ -119,7 +119,7 @@ Fluxo correto: draft → documento → signatário → requirements → `update(
 
 **O que fazer:**
 
-- Ative retry: `c.max_retries = 3` ([01-retries](cookbook/01-retries.md)).
+- Ative retry: `c.max_retries = 3` ([01-retries](examples/01-retries.md)).
 - Use `e.rate_limit_reset` e `e.rate_limit_remaining` para backoff manual em jobs.
 - Reduza concorrência (menos workers disparando sync em massa).
 
@@ -183,7 +183,7 @@ signature = request.headers['Content-HMAC']
 Clicksign::Webhook.verify_signature!(payload, signature, secret: ENV.fetch('CLICKSIGN_WEBHOOK_SECRET'))
 ```
 
-Teste local: [03-webhooks](cookbook/03-webhooks.md).
+Teste local: [03-webhooks](examples/03-webhooks.md).
 
 ---
 
@@ -232,7 +232,7 @@ unless response.success?
 end
 ```
 
-Ver [02-bulk-requirements](cookbook/02-bulk-requirements.md).
+Ver [02-bulk-requirements](examples/02-bulk-requirements.md).
 
 ---
 
@@ -273,7 +273,7 @@ Clicksign.configure { |c| c.logger = Rails.logger }
 | Com filtros / ordenação | `Envelope.filter(status: 'draft').to_a` |
 | Chain sem materializar | `Envelope.filter(...).order(...)` → `QueryProxy` |
 
-`list` **não** aceita argumentos. Guia: [cookbook/07-list-and-filter.md](cookbook/07-list-and-filter.md).
+`list` **não** aceita argumentos. Guia: [examples/07-list-and-filter.md](examples/07-list-and-filter.md).
 
 ---
 
@@ -307,7 +307,7 @@ Envelope.filter(status: 'running').auto_paging_each { |e| puts e.id }
 
 **Causas:** a gem abre **nova conexão TCP por request** (`Net::HTTP.start`) — sem pool. Normal no design stdlib-only.
 
-**O que fazer:** menos chamadas por request, `BulkRequirement`, jobs em fila, cache; medir com `on_request` (`duration_ms`). Ver [cookbook/08-production-limitations.md](cookbook/08-production-limitations.md).
+**O que fazer:** menos chamadas por request, `BulkRequirement`, jobs em fila, cache; medir com `on_request` (`duration_ms`). Ver [examples/08-production-limitations.md](examples/08-production-limitations.md).
 
 ---
 
@@ -317,7 +317,7 @@ Envelope.filter(status: 'running').auto_paging_each { |e| puts e.id }
 
 **Causa:** client em `Thread.current[:clicksign_client]` não propaga para Fibers filhos.
 
-**Correção:** `Clicksign.configure` por processo (single-tenant) ou não usar `Services#use` em código fiberizado. Ver [08-production-limitations.md](cookbook/08-production-limitations.md).
+**Correção:** `Clicksign.configure` por processo (single-tenant) ou não usar `Services#use` em código fiberizado. Ver [08-production-limitations.md](examples/08-production-limitations.md).
 
 ---
 
@@ -337,14 +337,14 @@ Envelope.filter(status: 'running').auto_paging_each { |e| puts e.id }
 
 | Tópico | Documento |
 |--------|-----------|
-| Retries, rate limit | [cookbook/01-retries.md](cookbook/01-retries.md) |
-| Bulk / atomic:results | [cookbook/02-bulk-requirements.md](cookbook/02-bulk-requirements.md) |
-| Webhooks | [cookbook/03-webhooks.md](cookbook/03-webhooks.md) |
-| Multi-conta | [cookbook/04-multi-client.md](cookbook/04-multi-client.md) |
+| Retries, rate limit | [examples/01-retries.md](examples/01-retries.md) |
+| Bulk / atomic:results | [examples/02-bulk-requirements.md](examples/02-bulk-requirements.md) |
+| Webhooks | [examples/03-webhooks.md](examples/03-webhooks.md) |
+| Multi-conta | [examples/04-multi-client.md](examples/04-multi-client.md) |
 | Fluxo notarial | [WORKFLOW.md](WORKFLOW.md) |
 | Rotas e resources | [SPEC.md](SPEC.md) |
 | Arquitetura da gem | [ARCHITECTURE.md](ARCHITECTURE.md) |
 | Observabilidade | [OBSERVABILITY.md](OBSERVABILITY.md) |
-| List vs filter | [cookbook/07-list-and-filter.md](cookbook/07-list-and-filter.md) |
-| Limitações (pool, Fibers) | [cookbook/08-production-limitations.md](cookbook/08-production-limitations.md) |
+| List vs filter | [examples/07-list-and-filter.md](examples/07-list-and-filter.md) |
+| Limitações (pool, Fibers) | [examples/08-production-limitations.md](examples/08-production-limitations.md) |
 | API oficial | [developers.clicksign.com](https://developers.clicksign.com/) |

@@ -259,6 +259,12 @@ RSpec.describe Clicksign::Resources::Notarial::Document do
         expect { instance.delete }
           .to raise_error(Clicksign::Error, /envelope_id is required/)
       end
+
+      it 'raises Clicksign::Error on reload instead of silently using nil in the URL' do
+        instance = described_class.send(:build_instance, doc_no_envelope)
+        expect { instance.reload }
+          .to raise_error(Clicksign::Error, /envelope_id is required/)
+      end
     end
   end
 

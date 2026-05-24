@@ -166,6 +166,11 @@ RSpec.describe Clicksign::Client do
       expect { client.get(path) }.to raise_error(Clicksign::TimeoutError)
     end
 
+    it 'raises TimeoutError on Net::WriteTimeout' do
+      stub_request(:post, url).to_raise(Net::WriteTimeout)
+      expect { client.post(path, body: {}) }.to raise_error(Clicksign::TimeoutError)
+    end
+
     it 'TimeoutError is retryable' do
       expect(Clicksign::TimeoutError.new).to be_retryable
     end

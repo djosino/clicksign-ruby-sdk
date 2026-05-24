@@ -24,6 +24,16 @@ RSpec.describe Clicksign::Resources::Notarial::BulkRequirement do
         .to raise_error(ArgumentError, 'block is required')
     end
 
+    it 'raises ArgumentError when envelope_id is nil' do
+      expect { described_class.create(envelope_id: nil) { |_| } }
+        .to raise_error(ArgumentError, /envelope_id is required/)
+    end
+
+    it 'raises ArgumentError when envelope_id is empty string' do
+      expect { described_class.create(envelope_id: '') { |_| } }
+        .to raise_error(ArgumentError, /envelope_id is required/)
+    end
+
     context 'with add_agree' do
       subject(:response) do
         described_class.create(envelope_id: envelope_id) do |ops|

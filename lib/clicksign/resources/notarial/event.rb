@@ -6,6 +6,8 @@ module Clicksign
       class Event < Clicksign::Resource
         self.resource_type = 'events'
 
+        # Known custom event kinds. Override or append to extend without SDK update:
+        #   Clicksign::Resources::Notarial::Event::CUSTOM_KINDS << 'new_kind'
         CUSTOM_KINDS = %w[token_email token_sms].freeze
 
         def self.create(envelope_id:, document_id:, **attributes)

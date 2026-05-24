@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+
+### Fixed
+
+- `gemspec` — `REVISION` adicionado a `spec.files`; instalação via RubyGems não quebra mais com `Errno::ENOENT` ao carregar a versão
+- `Client` — `Net::WriteTimeout` adicionado ao rescue de erros de rede; uploads grandes não levantam mais exceção não resgatada
+- `Webhook.compute_signature` — levanta `ArgumentError` quando `secret` é nil ou vazio; HMAC com secret vazio agora é detectado no boot
+- `Webhook.secure_compare?` — substituído double-hash + XOR manual por `OpenSSL.fixed_length_secure_compare`; corrigida coerção de `actual` via `is_a?(String)` (bug com header Rack como Array)
+- `Serializer.dump` — `attributes` agora tem default `{}` e fallback `|| {}`; `nil` não produz mais JSON:API inválido
+- `AtomicResultsParser.build_requirement` — removido guard `data.empty?`; Hash vazio `{}` é válido em JSON:API e não deve retornar nil
+- `BulkRequirement.create` — levanta `ArgumentError` quando `envelope_id` é nil ou vazio antes de montar a URL
+- `Parser.parse` — guard para `raw` nil retorna estrutura vazia em vez de `NoMethodError`
+- `base_path` em Document, Signer, Requirement, SignatureWatcher — levanta `Clicksign::Error` descritivo quando `envelope_id` é nil em vez de interpolar nil silenciosamente na URL
+- `BulkOperationsClient.handle_bulk_body` — `ErrorHandler.call` agora executa antes de retornar `{}` para respostas com body vazio; 500/401/422 com body vazio levantam a exceção correta
+
+### Changed
+
+- `docs/cookbook/` renomeado para `docs/examples/`; todas as referências atualizadas
+- `ARCHITECTURE.md` — seção adicionada sobre padrão `@_parent_id` para recursos nested, incluindo fallback e comportamento de erro
+
+---
+
 ## [0.1.6] — 2026-05-21
 
 ### Added
@@ -43,8 +65,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- `docs/cookbook/07-list-and-filter.md` — guia `list` vs `filter` vs auto-pagination
-- `docs/cookbook/08-production-limitations.md` — connection pool, Fibers e thread safety
+- `docs/examples/07-list-and-filter.md` — guia `list` vs `filter` vs auto-pagination
+- `docs/examples/08-production-limitations.md` — connection pool, Fibers e thread safety
 
 ### Changed
 
@@ -59,12 +81,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Clicksign::RetryBackoff` — backoff exponencial com **full jitter**, compartilhado por `Client` e `BulkOperationsClient`
 - `Configuration#logger` — log opcional de erros em callbacks de instrumentação
 - Arquivo `REVISION` como fonte única da versão da gem
-- `docs/cookbook/` — receitas de retries, bulk requirements, webhooks e multi-cliente
+- `docs/examples/` — receitas de retries, bulk requirements, webhooks e multi-cliente
 - `docs/TROUBLESHOOTING.md` — guia sintoma → causa → correção
 - `docs/ARCHITECTURE.md` — diagramas (Mermaid) e camadas da gem
 - `docs/OBSERVABILITY.md` — hooks, logs, métricas e exemplo OpenTelemetry
 - `docs/README.md` — índice da documentação
-- `docs/WORKFLOW.md` — alinhado a `environment`, links para cookbook e troubleshooting
+- `docs/WORKFLOW.md` — alinhado a `environment`, links para examples e troubleshooting
 - `RequestInstrumentation` — módulo compartilhado entre `Client` e `BulkOperationsClient`
 
 ### Fixed

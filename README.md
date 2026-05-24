@@ -9,7 +9,7 @@ Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.c
 
 **Requisitos:** Ruby >= 3.0 · dependências de runtime: apenas biblioteca padrão (`net/http`, `json`).
 
-**Documentação:** [índice `docs/`](docs/) · [Workflow](docs/WORKFLOW.md) · [Cookbook](docs/cookbook/) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Observabilidade](docs/OBSERVABILITY.md) · [SPEC](docs/SPEC.md) · API: [Sandbox](https://sandbox.clicksign.com/api/v3) · [Produção](https://app.clicksign.com/api/v3)
+**Documentação:** [índice `docs/`](docs/) · [Workflow](docs/WORKFLOW.md) · [Cookbook](docs/examples/) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Arquitetura](docs/ARCHITECTURE.md) · [Observabilidade](docs/OBSERVABILITY.md) · [SPEC](docs/SPEC.md) · API: [Sandbox](https://sandbox.clicksign.com/api/v3) · [Produção](https://app.clicksign.com/api/v3)
 
 ---
 
@@ -31,7 +31,7 @@ Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.c
 
 > **Exemplo passo a passo:** [`docs/WORKFLOW.md`](docs/WORKFLOW.md) — fluxo completo de envelope → documento → signatário → requisitos → ativação → notificação.
 
-> **Cookbook (receitas por cenário):** [`docs/cookbook/`](docs/cookbook/) — [retries](docs/cookbook/01-retries.md), [bulk requirements](docs/cookbook/02-bulk-requirements.md), [webhooks](docs/cookbook/03-webhooks.md), [vários clientes](docs/cookbook/04-multi-client.md), [list vs filter](docs/cookbook/07-list-and-filter.md), [limitações de produção](docs/cookbook/08-production-limitations.md).
+> **Cookbook (receitas por cenário):** [`docs/examples/`](docs/examples/) — [retries](docs/examples/01-retries.md), [bulk requirements](docs/examples/02-bulk-requirements.md), [webhooks](docs/examples/03-webhooks.md), [vários clientes](docs/examples/04-multi-client.md), [list vs filter](docs/examples/07-list-and-filter.md), [limitações de produção](docs/examples/08-production-limitations.md).
 
 > **Troubleshooting:** [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md) — sintoma → causa → correção (erros HTTP, multi-tenant, bulk parcial, webhooks).
 
@@ -507,7 +507,7 @@ Event.create(
 
 `list` **não** aceita argumentos. Para filtrar: `Envelope.filter(status: 'draft').to_a` (não `Envelope.list(status: 'draft')`).
 
-Guia completo: [`docs/cookbook/07-list-and-filter.md`](docs/cookbook/07-list-and-filter.md).
+Guia completo: [`docs/examples/07-list-and-filter.md`](docs/examples/07-list-and-filter.md).
 
 ```ruby
 # Sem filtros — retorna Array imediatamente
@@ -720,7 +720,7 @@ Cada request abre e fecha uma conexão TCP (via `Net::HTTP.start`). Não há reu
 - **OK** para jobs sequenciais, integrações moderadas e a maioria dos apps Rails.
 - **Atenção** em Puma com muitas threads e várias chamadas Clicksign por request: overhead de handshake/TLS pode virar gargalo antes do rate limit da API.
 
-Mitigações: menos round-trips (`BulkRequirement`, batch na app), filas (Sidekiq), cache de leitura. Detalhes: [`docs/cookbook/08-production-limitations.md`](docs/cookbook/08-production-limitations.md).
+Mitigações: menos round-trips (`BulkRequirement`, batch na app), filas (Sidekiq), cache de leitura. Detalhes: [`docs/examples/08-production-limitations.md`](docs/examples/08-production-limitations.md).
 
 ### `Thread.current` e Fibers
 
@@ -765,7 +765,7 @@ lib/clicksign/
 docs/SPEC.md             # mapa completo de resources e rotas
 docs/WORKFLOW.md         # fluxo notarial ponta a ponta
 docs/README.md           # índice da documentação
-docs/cookbook/           # receitas: retries, bulk, webhooks, multi-cliente
+docs/examples/           # receitas: retries, bulk, webhooks, multi-cliente
 docs/TROUBLESHOOTING.md  # diagnóstico e erros comuns
 docs/ARCHITECTURE.md     # diagramas e camadas
 docs/OBSERVABILITY.md    # logs, métricas, OpenTelemetry

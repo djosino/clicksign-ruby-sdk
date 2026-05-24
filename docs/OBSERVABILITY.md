@@ -209,13 +209,13 @@ Em specs que registram `on_request`, chame `Instrumentation.clear` no `after` do
 - Spans OTel embutidos
 - Export automático para Datadog/New Relic
 - Correlação `request_id` da API com trace ID (você pode copiar `e[:error].request_id` para o span manualmente)
-- Retry automático em 5xx/429 no `BulkOperationsClient` (só timeout; ver [01-retries](cookbook/01-retries.md))
+- Retry automático em 5xx/429 no `BulkOperationsClient` (só timeout; ver [01-retries](examples/01-retries.md))
 
 ---
 
 ## Referência
 
 - README: [Timeouts, retry e instrumentação](../README.md#timeouts-retry-e-instrumentação)
-- Retries: [cookbook/01-retries.md](cookbook/01-retries.md)
+- Retries: [examples/01-retries.md](examples/01-retries.md)
 - Arquitetura dos hooks: [ARCHITECTURE.md](ARCHITECTURE.md)
 - Falhas silenciosas em callback: [TROUBLESHOOTING.md](TROUBLESHOOTING.md#instrumentação-some-erro-do-callback)

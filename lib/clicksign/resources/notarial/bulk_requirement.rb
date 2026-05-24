@@ -42,6 +42,7 @@ module Clicksign
         end
 
         def self.create(envelope_id:, &block)
+          raise ArgumentError, 'envelope_id is required' if envelope_id.nil? || envelope_id.to_s.empty?
           raise ArgumentError, 'block is required' unless block
 
           ops = JsonApi::Operations::BulkRequirement.new

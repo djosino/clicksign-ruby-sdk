@@ -25,6 +25,8 @@ module Clicksign
 
     # Computes the expected Content-HMAC value for a given payload and secret.
     def self.compute_signature(payload, secret:)
+      raise ArgumentError, 'secret must not be empty' if secret.nil? || secret.empty?
+
       "#{DIGEST}=#{OpenSSL::HMAC.hexdigest(DIGEST, secret, payload)}"
     end
 

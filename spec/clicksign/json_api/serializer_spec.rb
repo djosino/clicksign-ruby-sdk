@@ -64,10 +64,18 @@ RSpec.describe Clicksign::JsonApi::Serializer do
     end
 
     context 'with nil attributes' do
-      it 'passes nil through to the payload' do
+      it 'coerces nil to empty hash to produce valid JSON:API' do
         result = described_class.dump(type: 'events', attributes: nil)
 
-        expect(result[:data][:attributes]).to be_nil
+        expect(result[:data][:attributes]).to eq({})
+      end
+    end
+
+    context 'without attributes keyword' do
+      it 'defaults to empty hash' do
+        result = described_class.dump(type: 'events')
+
+        expect(result[:data][:attributes]).to eq({})
       end
     end
   end
