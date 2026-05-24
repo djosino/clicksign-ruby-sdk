@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [0.1.7] — 2026-05-24
 
 ### Fixed
 
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `Webhook.compute_signature` — levanta `ArgumentError` quando `secret` é nil ou vazio; HMAC com secret vazio agora é detectado no boot
 - `Webhook.secure_compare?` — substituído double-hash + XOR manual por `OpenSSL.fixed_length_secure_compare`; corrigida coerção de `actual` via `is_a?(String)` (bug com header Rack como Array)
 - `Serializer.dump` — `attributes` agora tem default `{}` e fallback `|| {}`; `nil` não produz mais JSON:API inválido
-- `AtomicResultsParser.build_requirement` — removido guard `data.empty?`; Hash vazio `{}` é válido em JSON:API e não deve retornar nil
+- `AtomicResultsParser.build_requirement` — guard refinado: retorna nil apenas para `data` nil ou sem `id`/`type`; `data: {}` de operações `remove` continua retornando nil
 - `BulkRequirement.create` — levanta `ArgumentError` quando `envelope_id` é nil ou vazio antes de montar a URL
 - `Parser.parse` — guard para `raw` nil retorna estrutura vazia em vez de `NoMethodError`
 - `base_path` em Document, Signer, Requirement, SignatureWatcher — levanta `Clicksign::Error` descritivo quando `envelope_id` é nil em vez de interpolar nil silenciosamente na URL
