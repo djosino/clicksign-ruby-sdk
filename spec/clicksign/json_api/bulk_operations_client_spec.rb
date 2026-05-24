@@ -152,6 +152,34 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
         expect(client.post(path, body: body)).to eq({})
       end
     end
+
+    context 'when response is a server error with empty body' do
+      before do
+        stub_request(:post, url).to_return(status: 500, body: '')
+      end
+
+      let(:status) { 500 }
+      let(:response_body) { nil }
+
+      it 'raises ServerError even when body is empty' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::ServerError)
+      end
+    end
+
+    context 'when response is unauthorized with empty body' do
+      before do
+        stub_request(:post, url).to_return(status: 401, body: '')
+      end
+
+      let(:status) { 401 }
+      let(:response_body) { nil }
+
+      it 'raises AuthenticationError even when body is empty' do
+        expect { client.post(path, body: body) }
+          .to raise_error(Clicksign::AuthenticationError)
+      end
+    end
   end
 
   describe 'timeout and retry behavior' do

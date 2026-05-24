@@ -66,7 +66,6 @@ module Clicksign
       def handle_bulk_body(response, context, status, duration)
         parsed = parse_response_body(response)
         return parsed if parsed&.key?('atomic:results')
-        return {} if parsed.nil?
 
         begin
           ErrorHandler.call(response)
@@ -74,7 +73,7 @@ module Clicksign
           publish_http_error(context, e, status, duration)
           raise
         end
-        parsed
+        parsed || {}
       end
 
       def http_post(request, uri)
