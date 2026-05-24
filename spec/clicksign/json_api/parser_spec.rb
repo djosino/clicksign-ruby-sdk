@@ -123,6 +123,20 @@ RSpec.describe Clicksign::JsonApi::Parser do
       end
     end
 
+    context 'when data is an unexpected type (not Array, Hash, or nil)' do
+      it 'raises Clicksign::Error for an Integer' do
+        expect do
+          described_class.parse({ 'data' => 42 })
+        end.to raise_error(Clicksign::Error, /Unexpected JSON:API data type/)
+      end
+
+      it 'raises Clicksign::Error for a String' do
+        expect do
+          described_class.parse({ 'data' => 'invalid' })
+        end.to raise_error(Clicksign::Error, /Unexpected JSON:API data type/)
+      end
+    end
+
     context 'when links are present' do
       it 'exposes links for pagination' do
         raw = {

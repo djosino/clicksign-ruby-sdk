@@ -162,6 +162,15 @@ RSpec.describe Clicksign::ErrorHandler do
       end
     end
 
+    context 'when errors array contains strings instead of hashes' do
+      it 'falls back to response.message without raising' do
+        body = { 'errors' => ['something went wrong', 'another error'] }.to_json
+        expect do
+          described_class.call(mock_response(422, body))
+        end.to raise_error(Clicksign::ValidationError, 'HTTP Error')
+      end
+    end
+
     context 'when raising errors with metadata' do
       it 'exposes status_code on the raised exception' do
         err = nil

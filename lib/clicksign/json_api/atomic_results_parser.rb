@@ -24,6 +24,7 @@ module Clicksign
       end
 
       def build_operation_result(slot:, index:, op:, envelope_id:)
+        slot ||= {}
         errors = slot['errors']
         requirement = build_requirement(slot['data'], envelope_id: envelope_id)
 
@@ -54,7 +55,7 @@ module Clicksign
       def format_errors(errors)
         return 'Validation failed' unless errors.is_a?(Array)
 
-        errors.filter_map { |e| e['detail'] || e['title'] }.join(', ')
+        errors.filter_map { |e| e.is_a?(Hash) && (e['detail'] || e['title']) }.join(', ')
       end
     end
   end

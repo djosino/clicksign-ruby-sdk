@@ -232,7 +232,7 @@ module Clicksign
           return true
         end
 
-        items.size >= per
+        per.positive? && items.size >= per
       end
 
       def build_instance(data, parent_id: nil)

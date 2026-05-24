@@ -15,7 +15,7 @@ module Clicksign
       end
 
       def child_folder_ids
-        Array(relationships.dig('folders', 'data')).filter_map { |d| d['id'] }
+        Array(relationships.dig('folders', 'data')).filter_map { |d| d.is_a?(Hash) ? d['id'] : nil }
       end
     end
   end

@@ -79,10 +79,13 @@ Clicksign.on_error   { |e| }  # e: { method:, path:, status:, error:, duration_m
 - `ErrorHandler.extract_message` guarda `unless body.is_a?(Hash)` — API pode retornar array JSON
 - `raise TimeoutError, e.message, e.backtrace` — preserva backtrace da exceção de rede original
 - `nested_create` foi removido do `Resource` base por ser código morto — não recriar
-- `BulkOperationsClient` retenta apenas `TimeoutError`, não `ServerError` — comportamento intencional documentado em spec
+- `BulkOperationsClient` retenta `TimeoutError`, `RateLimitError` e `ServerError` — alinhado com `Client.rb`
 - `Resource.include` com Module → `super`; com String/Symbol → `with_includes`; mistura → `ArgumentError`
 - `infer_resource_type` tem guard `return 'resources' if name.nil?` — classes anônimas sem `resource_type` explícito
-- `fetch_auto_pages` usa `links['next']` quando presente — evita requests extras desnecessários; `links: {}` (sem chave `next`) também para
+- `fetch_auto_pages` usa `links['next']` quando presente — evita requests extras desnecessários; `links: {}` (sem chave `next`) também para; `per=0` não cria loop infinito (guard `per.positive?` em `more_pages?`)
+- `AtomicResultsParser.build_operation_result` normaliza `slot ||= {}` — `atomic:results: [null]` não levanta `NoMethodError`
+- `JsonApi::Parser.parse` levanta `Clicksign::Error` para `data` de tipo inesperado (não Array/Hash/nil) — resposta malformada não é silenciada como `[]`
+- `ErrorHandler.extract_from_json` guarda `e.is_a?(Hash)` em `filter_map` — itens de erro que são strings não são descartados silenciosamente (fallback para `response.message`)
 - Callbacks de instrumentação são isolados com `rescue StandardError`; erros logados via `config.logger&.warn`
 - `Thread.current[:clicksign_client]` incompatível com Fiber-based runtimes (Falcon/async-ruby)
 - `Webhook.verify_signature!` com `signature: nil` levanta `WebhookSignatureError`, não `TypeError` — guard em `secure_compare?`

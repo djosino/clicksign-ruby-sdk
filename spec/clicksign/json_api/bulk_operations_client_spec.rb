@@ -217,7 +217,22 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
       expect(WebMock).to have_requested(:post, url).twice
     end
 
-    it 'does not retry on ServerError (500) — only timeouts are retried' do
+    it 'retries on ServerError (500)' do
+      error_body   = { 'errors' => [{ 'detail' => 'server error' }] }.to_json
+      success_body = { 'atomic:results' => [{ 'data' => {} }] }
+
+      stub_request(:post, url)
+        .to_return(status: 500, body: error_body,
+          headers: { 'Content-Type' => 'application/json' })
+        .to_return(status: 200, body: success_body.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      result = retrying_client.post(path, body: body)
+      expect(result).to eq(success_body)
+      expect(WebMock).to have_requested(:post, url).twice
+    end
+
+    it 'raises ServerError after exhausting max_retries on 500' do
       error_body = { 'errors' => [{ 'detail' => 'server error' }] }.to_json
 
       stub_request(:post, url)
@@ -226,7 +241,22 @@ RSpec.describe Clicksign::JsonApi::BulkOperationsClient do
 
       expect { retrying_client.post(path, body: body) }
         .to raise_error(Clicksign::ServerError)
-      expect(WebMock).to have_requested(:post, url).once
+      expect(WebMock).to have_requested(:post, url).times(3)
+    end
+
+    it 'retries on RateLimitError (429)' do
+      error_body   = { 'errors' => [{ 'detail' => 'rate limited' }] }.to_json
+      success_body = { 'atomic:results' => [{ 'data' => {} }] }
+
+      stub_request(:post, url)
+        .to_return(status: 429, body: error_body,
+          headers: { 'Content-Type' => 'application/json' })
+        .to_return(status: 200, body: success_body.to_json,
+          headers: { 'Content-Type' => 'application/json' })
+
+      result = retrying_client.post(path, body: body)
+      expect(result).to eq(success_body)
+      expect(WebMock).to have_requested(:post, url).twice
     end
 
     it 'raises after exhausting max_retries' do

@@ -10,7 +10,8 @@ module Clicksign
         data = case raw_data
                when Array then raw_data.map { |item| build(item) }
                when Hash  then [build(raw_data)]
-               else            []
+               when nil   then []
+               else raise Error, "Unexpected JSON:API data type: #{raw_data.class}"
                end
 
         included = Array(raw['included'])

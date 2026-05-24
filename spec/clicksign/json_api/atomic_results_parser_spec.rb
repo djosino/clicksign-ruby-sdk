@@ -31,6 +31,11 @@ RSpec.describe Clicksign::JsonApi::AtomicResultsParser do
     it 'returns a default message when errors is not an Array' do
       expect(described_class.format_errors('detail' => 'x')).to eq('Validation failed')
     end
+
+    it 'skips non-Hash items without raising' do
+      errors = ['string error', { 'detail' => 'real error' }]
+      expect(described_class.format_errors(errors)).to eq('real error')
+    end
   end
 
   describe '.parse' do
@@ -120,6 +125,26 @@ RSpec.describe Clicksign::JsonApi::AtomicResultsParser do
         results = described_class.parse(raw, envelope_id: envelope_id, operations: [])
 
         expect(results).to eq([])
+      end
+    end
+
+    context 'when atomic:results contains a null entry' do
+      subject(:results) do
+        described_class.parse(raw, envelope_id: envelope_id,
+          operations: [{ 'op' => 'add' }])
+      end
+
+      let(:raw) { { 'atomic:results' => [nil] } }
+
+      it 'does not raise NoMethodError' do
+        expect { results }.not_to raise_error
+      end
+
+      it 'returns an OperationResult with no requirement and no errors' do
+        result = results.first
+        expect(result).to be_a(Clicksign::Resources::Notarial::BulkRequirement::OperationResult)
+        expect(result.requirement).to be_nil
+        expect(result.errors).to be_nil
       end
     end
   end

@@ -231,5 +231,19 @@ RSpec.describe Clicksign::Resources::Folder do
     it 'returns an empty array when there are no children' do
       expect(folder_without_children.child_folder_ids).to eq([])
     end
+
+    context 'when API returns folders.data as a Hash (malformed)' do
+      let(:folder_with_hash_data) do
+        data = folder_data(id: folder_id, name: 'Root Folder', path: '/', in_root: true)
+        data['relationships'] = {
+          'folders' => { 'data' => { 'type' => 'folders', 'id' => child_id } },
+        }
+        described_class.send(:build_instance, data)
+      end
+
+      it 'returns empty array without raising' do
+        expect(folder_with_hash_data.child_folder_ids).to eq([])
+      end
+    end
   end
 end

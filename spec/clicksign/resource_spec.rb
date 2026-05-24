@@ -431,6 +431,27 @@ RSpec.describe Clicksign::Resource do
       end
     end
 
+    context 'when per is 0 (defensive: should not loop infinitely)' do
+      before do
+        body = {
+          'data' => [{ 'id' => 'id-1', 'type' => 'widgets',
+                       'attributes' => { 'name' => 'Widget 1' } }],
+        }.to_json
+
+        stub_request(:get, url)
+          .with(query: { 'page[number]' => '1', 'page[size]' => '0' })
+          .to_return(status: 200, body: body, headers: json_headers)
+      end
+
+      it 'stops after the first page and does not loop' do
+        names = []
+        klass.per(0).auto_paging_each { |w| names << w.name }
+        expect(names).to eq(['Widget 1'])
+        expect(WebMock).to have_requested(:get, url)
+          .with(query: { 'page[number]' => '1', 'page[size]' => '0' }).once
+      end
+    end
+
     context 'when the API returns links: {} (present but without next key)' do
       before do
         body = {
