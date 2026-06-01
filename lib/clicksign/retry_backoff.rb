@@ -18,5 +18,22 @@ module Clicksign
 
       rng.rand(max)
     end
+
+    def parse_retry_after(headers)
+      return nil unless headers.is_a?(Hash)
+
+      raw = headers['retry-after'] || headers['Retry-After']
+      return nil if raw.nil? || raw.to_s.strip.empty?
+
+      Float(raw.to_s.strip)
+    rescue ArgumentError, TypeError
+      nil
+    end
+
+    def retry_delay(attempt, headers = nil, rng: Random)
+      jitter      = delay(attempt, rng: rng)
+      retry_after = parse_retry_after(headers)
+      retry_after ? [jitter, retry_after].max : jitter
+    end
   end
 end

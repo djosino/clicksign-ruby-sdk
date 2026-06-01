@@ -45,4 +45,50 @@ RSpec.describe Clicksign::RetryBackoff do
       expect(delays.uniq.size).to be > 1
     end
   end
+
+  describe '.parse_retry_after' do
+    it 'parses a numeric seconds value' do
+      expect(described_class.parse_retry_after('Retry-After' => '3')).to eq(3.0)
+      expect(described_class.parse_retry_after('Retry-After' => '1.5')).to eq(1.5)
+    end
+
+    it 'is case-insensitive on the header name' do
+      expect(described_class.parse_retry_after('retry-after' => '2')).to eq(2.0)
+    end
+
+    it 'returns nil for missing header' do
+      expect(described_class.parse_retry_after({})).to be_nil
+      expect(described_class.parse_retry_after(nil)).to be_nil
+    end
+
+    it 'returns nil for blank value' do
+      expect(described_class.parse_retry_after('Retry-After' => '')).to be_nil
+      expect(described_class.parse_retry_after('Retry-After' => '  ')).to be_nil
+    end
+
+    it 'returns nil for non-numeric value' do
+      expect(described_class.parse_retry_after('Retry-After' => 'tomorrow')).to be_nil
+    end
+  end
+
+  describe '.retry_delay' do
+    let(:rng) { instance_double(Random) }
+
+    before { allow(rng).to receive(:rand).with(0.5).and_return(0.3) }
+
+    it 'returns jitter when no Retry-After header' do
+      expect(described_class.retry_delay(1, nil, rng: rng)).to eq(0.3)
+      expect(described_class.retry_delay(1, {}, rng: rng)).to eq(0.3)
+    end
+
+    it 'returns Retry-After when it exceeds jitter' do
+      headers = { 'Retry-After' => '5' }
+      expect(described_class.retry_delay(1, headers, rng: rng)).to eq(5.0)
+    end
+
+    it 'returns jitter when it exceeds Retry-After' do
+      headers = { 'Retry-After' => '0.1' }
+      expect(described_class.retry_delay(1, headers, rng: rng)).to eq(0.3)
+    end
+  end
 end

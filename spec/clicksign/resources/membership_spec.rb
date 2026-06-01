@@ -207,7 +207,7 @@ RSpec.describe Clicksign::Resources::Membership do
     let(:membership) { described_class.send(:build_instance, primary_membership) }
 
     before do
-      stub_request(:patch, membership_url)
+      stub_request(:put, membership_url)
         .to_return(
           status: 200,
           body: single_resource(
@@ -222,6 +222,12 @@ RSpec.describe Clicksign::Resources::Membership do
       expect(updated.id).to eq(membership_id)
       expect(updated.role).to eq('member')
       expect(updated.user_id).to eq(user_id)
+    end
+
+    it 'uses PUT not PATCH' do
+      updated
+      expect(WebMock).to have_requested(:put, membership_url)
+      expect(WebMock).not_to have_requested(:patch, membership_url)
     end
   end
 

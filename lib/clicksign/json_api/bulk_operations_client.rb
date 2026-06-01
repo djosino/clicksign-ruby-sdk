@@ -43,7 +43,8 @@ module Clicksign
         begin
           attempts += 1
           execute_once(request, uri, attempt: attempts)
-        rescue Clicksign::TimeoutError, Clicksign::RateLimitError, Clicksign::ServerError => e
+        rescue Clicksign::TimeoutError, Clicksign::RateLimitError,
+               Clicksign::ServerError => e
           raise unless e.retryable? && attempts <= @max_retries
 
           delay = RetryBackoff.delay(attempts)

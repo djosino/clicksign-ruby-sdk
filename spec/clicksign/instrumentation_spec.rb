@@ -226,13 +226,18 @@ RSpec.describe 'Clicksign instrumentation integration' do
     end
 
     it 'on_error fires when the request raises an error' do
+      no_retry_client = Clicksign::Client.new(
+        api_key: 'test-token',
+        base_url: JsonApiFixtures::BASE_URL,
+        max_retries: 0,
+      )
       stub_request(:get, url)
         .to_return(status: 500, body: error_body, headers: json_headers)
 
       error_events = []
       Clicksign.on_error { |e| error_events << e }
 
-      expect { client.get(path) }.to raise_error(Clicksign::ServerError)
+      expect { no_retry_client.get(path) }.to raise_error(Clicksign::ServerError)
       expect(error_events.length).to eq(1)
       expect(error_events.first).to include(method: :get, status: 500)
     end

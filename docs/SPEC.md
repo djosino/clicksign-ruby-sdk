@@ -138,7 +138,7 @@ Baseado nas rotas da Clicksign API v3, namespace `:v3`.
 **Sub-resources:**
 - `GET /envelopes/:id/events` → `Envelope.list_events(id)` (`EventResource`: `name`, `data`, `created`)
 - `GET /envelopes/:id/requirements` → `Envelope.list_requirements(id, **filters)`
-- `GET/POST/PATCH/DELETE /envelopes/:id/requirements` → `Requirement` (create, retrieve, update, delete)
+- `GET/POST/DELETE /envelopes/:id/requirements` → `Requirement` (create, retrieve, delete — sem update)
 - `POST /envelopes/:id/notifications` → `Envelope.notify(id, ...)`
 - `GET/POST/PATCH/DELETE /envelopes/:id/documents` → `Document`
 - `GET/POST/DELETE /envelopes/:id/signers` → `Signer` (exceto update)
@@ -220,7 +220,6 @@ Uma operação por requisição. Envelope em **draft** para create/delete.
 | Listar (signatário) | `Requirement.list_for_signer(signer_id, **filters)` | `GET /signers/:id/relationships/requirements` |
 | Buscar | `Requirement.retrieve(id, envelope_id:)` | `GET /envelopes/:envelope_id/requirements/:id` |
 | Criar | `Requirement.create(envelope_id:, **attrs)` | `POST /envelopes/:envelope_id/requirements` |
-| Atualizar | `requirement.update(**attrs)` | `PATCH /envelopes/:envelope_id/requirements/:id` |
 | Deletar | `requirement.delete` | `DELETE /envelopes/:envelope_id/requirements/:id` |
 
 #### 3.4.2 Bulk (`resources :envelopes → :bulk_requirements`)
@@ -306,6 +305,8 @@ CRUD completo (list, retrieve, create, update, delete).
 **Filtros:** `user.id`
 
 **Relacionamentos:** `user` (has_one)
+
+> **Atenção:** `update` usa **PUT** `/memberships/:id`, não PATCH. A base class usa PATCH — sobrescrever em `membership.rb`.
 
 ---
 

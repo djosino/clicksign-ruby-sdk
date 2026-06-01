@@ -24,8 +24,8 @@ RSpec.describe Clicksign::Configuration do
       expect(config.write_timeout).to eq(10)
     end
 
-    it 'sets max_retries to 0' do
-      expect(config.max_retries).to eq(0)
+    it 'sets max_retries to 3' do
+      expect(config.max_retries).to eq(3)
     end
 
     it 'leaves logger nil' do

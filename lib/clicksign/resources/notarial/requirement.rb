@@ -42,6 +42,11 @@ module Clicksign
         end
         private_class_method :list_related
 
+        def update(**)
+          raise NotImplementedError,
+            'Requirement does not support update (API does not provide this endpoint)'
+        end
+
         def base_path
           eid = @_parent_id || envelope_id
           if eid.nil?

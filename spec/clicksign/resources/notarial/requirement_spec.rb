@@ -198,27 +198,11 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
   end
 
   describe '#update' do
-    let(:instance) do
-      described_class.send(:build_instance, requirement, parent_id: envelope_id)
-    end
-
-    before do
-      stub_request(:patch, requirement_url)
-        .to_return(
-          status: 200,
-          body: single_resource(
-            requirement_data(id: requirement_id, action: 'provide_evidence',
-              envelope_id: envelope_id, document_id: document_id,
-              signer_id: signer_id),
-          ).to_json,
-          headers: { 'Content-Type' => 'application/vnd.api+json' },
-        )
-    end
-
-    it 'updates and returns the record', :aggregate_failures do
-      updated = instance.update(action: 'provide_evidence')
-      expect(updated).to be_a(described_class)
-      expect(updated.action).to eq('provide_evidence')
+    it 'raises NotImplementedError' do
+      instance = described_class.send(:build_instance, requirement,
+        parent_id: envelope_id)
+      expect { instance.update(action: 'provide_evidence') }
+        .to raise_error(NotImplementedError, /does not support update/)
     end
   end
 
@@ -297,12 +281,6 @@ RSpec.describe Clicksign::Resources::Notarial::Requirement do
           'attributes' => { 'action' => 'agree' },
           'relationships' => {},
         }
-      end
-
-      it 'raises Clicksign::Error on update instead of silently using nil in the URL' do
-        instance = described_class.send(:build_instance, req_no_envelope)
-        expect { instance.update(action: 'sign') }
-          .to raise_error(Clicksign::Error, /envelope_id is required/)
       end
 
       it 'raises Clicksign::Error on delete instead of silently using nil in the URL' do

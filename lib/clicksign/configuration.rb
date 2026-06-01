@@ -15,7 +15,7 @@ module Clicksign
       @open_timeout  = 2
       @read_timeout  = 10
       @write_timeout = 10
-      @max_retries   = 0
+      @max_retries   = 3
     end
 
     def environment=(env)

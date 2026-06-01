@@ -14,7 +14,7 @@ module Clicksign
     }.freeze
 
     def initialize(api_key:, base_url:, open_timeout: 2, read_timeout: 10,
-      write_timeout: 10, max_retries: 0)
+      write_timeout: 10, max_retries: 3)
       @api_key       = api_key
       @base_url      = base_url
       @open_timeout  = open_timeout
@@ -38,6 +38,13 @@ module Clicksign
     def patch(path, body:)
       uri = build_uri(path)
       request = Net::HTTP::Patch.new(uri, headers)
+      request.body = body.to_json
+      execute_with_retry(request, uri)
+    end
+
+    def put(path, body:)
+      uri = build_uri(path)
+      request = Net::HTTP::Put.new(uri, headers)
       request.body = body.to_json
       execute_with_retry(request, uri)
     end
@@ -70,7 +77,7 @@ module Clicksign
              Clicksign::ServerError => e
         raise unless e.retryable? && attempts <= @max_retries
 
-        delay = RetryBackoff.delay(attempts)
+        delay = RetryBackoff.retry_delay(attempts, e.response_headers)
         publish_retry(request, uri, attempts, e, delay)
         sleep(delay)
         retry
