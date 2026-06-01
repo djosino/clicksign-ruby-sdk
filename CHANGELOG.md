@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.1.8] — 2026-06-01
+
+### Added
+
+- `RetryBackoff` — `parse_retry_after` e `retry_delay` para honrar header `Retry-After` (inteiro ou HTTP-date); paridade com SDKs Python/Java
+- `Configuration#max_retries` — padrão alterado de `0` para `3`; retries habilitados por default
+- `Client#execute_with_retry` — passa headers da resposta de erro para `retry_delay`, respeitando `Retry-After` do servidor
+
+### Fixed
+
+- `Requirement#update` — levanta `NotImplementedError` (API não expõe `PATCH` para requirements)
+- `BulkOperationsClient` — retry agora captura `RateLimitError` e `ServerError`, alinhando com `Client` (antes só `TimeoutError` era retentado)
+- `Resource#more_pages?` — guard `per.positive?` previne loop infinito quando `per=0`
+- `Parser.parse` — levanta `Clicksign::Error` para `data` de tipo inesperado em vez de silenciar como `[]`
+- `ErrorHandler.extract_from_json` — guard `e.is_a?(Hash)` em `filter_map` evita descarte silencioso de itens de erro que são strings
+- `AtomicResultsParser` — `slot ||= {}` previne `NoMethodError` quando `atomic:results` contém entrada `null`; `format_errors` recebe guard `is_a?(Hash)` consistente
+- `Folder#child_folder_ids` — guard `d.is_a?(Hash)` em `filter_map` previne comportamento errado quando API retorna `data` como Hash singular
+
+---
+
 ## [0.1.7] — 2026-05-24
 
 ### Fixed
