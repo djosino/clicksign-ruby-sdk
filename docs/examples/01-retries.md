@@ -16,7 +16,7 @@ Clicksign.configure do |c|
   c.open_timeout  = 2             # conexão (s) — padrão 2
   c.read_timeout  = 30            # leitura (s) — aumente para PDFs grandes
   c.write_timeout = 30            # escrita (s)
-  c.max_retries   = 3             # 0 = desligado (padrão)
+  c.max_retries   = 3             # padrão já é 3; use 0 para desligar
 end
 ```
 
@@ -39,7 +39,7 @@ tenant_service.use do
 end
 ```
 
-> **Nota:** `BulkRequirement` usa `Clicksign.bulk_operations_client`, criado a partir da **config global** (`Clicksign.configure`). Em apps multi-tenant, defina `max_retries` no initializer global ou execute bulk jobs com a mesma política de retry para todos os tenants. Hooks `:request`/`:retry`/`:error` funcionam no bulk; retry automático continua **só em timeout**. Ver [Vários clientes](04-multi-client.md).
+> **Nota:** `BulkRequirement` usa `Clicksign.bulk_operations_client`, criado a partir da **config global** (`Clicksign.configure`). Em apps multi-tenant, defina `max_retries` no initializer global ou execute bulk jobs com a mesma política de retry para todos os tenants. Hooks `:request`/`:retry`/`:error` funcionam no bulk. Ver [Vários clientes](04-multi-client.md).
 
 ---
 
@@ -48,8 +48,8 @@ end
 | Erro | `Client` (resources) | `BulkOperationsClient` (`BulkRequirement`) |
 |------|----------------------|--------------------------------------------|
 | Timeout / conexão (`TimeoutError`) | Sim | Sim |
-| HTTP 429 (`RateLimitError`) | Sim | Não |
-| HTTP 5xx (`ServerError`) | Sim | Não |
+| HTTP 429 (`RateLimitError`) | Sim | Sim |
+| HTTP 5xx (`ServerError`) | Sim | Sim |
 | 401, 403, 404, 422 | Não | Não |
 
 Total de tentativas HTTP = **1 + `max_retries`** (a primeira falha conta como tentativa 1).

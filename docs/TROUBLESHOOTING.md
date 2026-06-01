@@ -133,7 +133,6 @@ Fluxo correto: draft → documento → signatário → requirements → `update(
 
 - Configure `max_retries` e monitore `Clicksign.on_retry`.
 - Se persistir, abra suporte com `e.request_id` e horário da falha.
-- **BulkRequirement:** 5xx **não** dispara retry automático no bulk client — só timeout; repita a operação manualmente ou use requirement individual.
 
 ---
 
@@ -242,9 +241,9 @@ Ver [02-bulk-requirements](examples/02-bulk-requirements.md).
 
 | Verificar | Valor esperado |
 |-----------|----------------|
-| `max_retries` | `> 0` |
+| `max_retries` | `> 0` (padrão já é 3) |
 | Tipo de erro | `ServerError`, `RateLimitError`, `TimeoutError` |
-| Client | Resources usam `Client`; bulk só retenta **timeout** (ambos publicam hooks `:request`/`:error`) |
+| Client | Resources usam `Client`; `BulkOperationsClient` retenta os três tipos (ambos publicam hooks `:request`/`:error`) |
 | `ValidationError` | Nunca retenta (corrigir payload) |
 
 ---
