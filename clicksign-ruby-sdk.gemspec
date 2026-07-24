@@ -5,9 +5,9 @@ require_relative 'lib/clicksign/version'
 Gem::Specification.new do |spec|
   spec.name     = 'clicksign-ruby-sdk'
   spec.version  = Clicksign::VERSION
-  spec.authors  = ['Clicksign']
+  spec.authors  = ['Danilo Josino']
   spec.summary     = 'Ruby SDK for the Clicksign API'
-  spec.description = 'Official Ruby SDK for the Clicksign e-signature API (v3). ' \
+  spec.description = 'Unofficial Ruby SDK for the Clicksign e-signature API (v3). ' \
                      'Supports envelope management, signing workflows and webhooks. ' \
                      'JSON:API compliant, no runtime dependencies beyond the Ruby stdlib.'
   spec.homepage = 'https://github.com/djosino/clicksign-ruby-sdk'
