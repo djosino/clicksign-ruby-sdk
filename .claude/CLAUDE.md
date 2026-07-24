@@ -103,6 +103,49 @@ Clicksign.on_error   { |e| }  # e: { method:, path:, status:, error:, duration_m
 - `QueryBuilder.include` acumula tipos em chamadas sucessivas (não sobrescreve); deduplica automaticamente
 - `build_uri` com `path` contendo query string existente sobrescreve essa query — callers devem sempre passar params via hash; nunca embutir query no path
 
+## API Resource Map
+
+Tabela de todos os resources v3. Usar como referência ao gerar novos resources (`/gen-resource`).
+
+| Resource (classe Ruby) | `resource_type` | `endpoint` | Métodos expostos | Gotchas |
+|------------------------|-----------------|------------|-----------------|---------|
+| `Notarial::Envelope` | `envelopes` | `/envelopes` | list, retrieve, create, update, delete + `activate(id)`, `notify(id)`, `list_documents`, `list_signers`, `list_requirements`, `list_signature_watchers`, `list_events` | — |
+| `Notarial::Document` | `documents` | `/envelopes/:id/documents` | list (via Envelope), retrieve, create, update, delete | nested; `content_base64`/`content_url`/`template`/`duplicate` mutuamente exclusivos |
+| `Notarial::Signer` | `signers` | `/envelopes/:id/signers` | list (via Envelope), create, delete | **sem update** — `except: [:update]` |
+| `Notarial::Requirement` | `requirements` | `/envelopes/:id/requirements` | list (via Envelope/Document/Signer), retrieve, create, delete | **sem update** — API não expõe PATCH; `create`/`delete` só em envelope `draft` |
+| `Notarial::BulkRequirement` | `bulk_requirements` | `/envelopes/:id/bulk_requirements` | create (block API com `atomic:operations`) | resposta `atomic:results`; sempre checar `response.success?` |
+| `Notarial::SignatureWatcher` | `signature_watchers` | `/envelopes/:id/signature_watchers` | list (via Envelope), retrieve, create, delete | nested |
+| `Resources::Webhook` | `webhooks` | `/webhooks` | list, retrieve, create, update, delete | filtros: `status` |
+| `Resources::User` | `users` | `/users` | list, retrieve, create + `me` | **sem update/delete** — `only: %i[index show create]` |
+| `Resources::Membership` | `memberships` | `/memberships` | list, create, update, delete | **update usa PUT**, não PATCH — sobrescrever método |
+| `Resources::Group` | `groups` | `/groups` | list, retrieve, create, update, delete | relacionamento `users` has_many |
+| `Resources::Template` | `templates` | `/templates` | list, retrieve, create, update, delete | relacionamento `template_fields` has_many |
+| `Resources::TemplateField` | `template_fields` | `/template_fields` | list | **só index** — `only: %i[index]` |
+| `Resources::Folder` | `folders` | `/folders` | list, retrieve, create | **sem update/delete** — `only: %i[index create show]`; auto-referencial (`resolve_custom_type`) |
+| `Resources::EnvelopeBulkCreation` | `envelope_bulk_creations` | `/envelope_bulk_creations` | create | **só create** — resposta: `job_id`, `enqueued_at` |
+| `Resources::AccessControlList` | `access_control_lists` | `/access_control_lists` | create, delete | **singular** (`jsonapi_resource`, não plural); delete envia body com relationships |
+| `Resources::Event` | `events` | `/envelopes/:id/documents/:id/events` | list (via Envelope), create, `create_add_image`, `create_custom` | **sem retrieve/update/delete/reload**; nested duplo (envelope + document) |
+| `AutoSignature::Term` | `auto_signature_terms` | `/auto_signature/terms` | create | **só create** — namespace de rota |
+| `AcceptanceTerm::Whatsapp` | `acceptance_term_whatsapps` | `/acceptance_term/whatsapps` | list, retrieve, create, update | **sem delete** — `except: %i[destroy]` |
+
+## API Constraints (não deriváveis do código)
+
+Regras da API que devem ser respeitadas na geração de resources:
+
+- **Membership#update** — usa `PUT /memberships/:id`, não `PATCH`; sobrescrever método na classe para trocar verbo HTTP
+- **Requirement** — `create`/`delete` só funcionam com envelope em status `draft`; em `running` a API retorna 422
+- **Signer** — sem `update`; API não expõe `PATCH /signers/:id`; declarar `except: [:update]` e `raise NotImplementedError`
+- **Requirement** — sem `update`; API não expõe `PATCH /requirements/:id`; idem
+- **Event** — sem `retrieve`/`update`/`delete`/`reload`; API só tem `GET` (list) e `POST` (create)
+- **User** — sem `update`/`delete`; `only: %i[index show create]` + método `me` (`GET /users/me`)
+- **TemplateField** — só `list`; `only: %i[index]`; sem create/update/delete
+- **Folder** — sem `update`/`delete`; `only: %i[index create show]`; auto-referencial (pasta pai = relacionamento `folder` has_one)
+- **AccessControlList** — rota singular (`jsonapi_resource`, não `jsonapi_resources`); `DELETE` envia relacionamentos no body, não ID na URL
+- **BulkRequirement** — não usa thread-local do `Services#use`; usa `Clicksign.bulk_operations_client` global memoizado
+- **Webhook (HMAC)** — `verify_signature!` valida `Content-HMAC` header com `sha256=<hex>`; usar `request.raw_post`, nunca body re-serializado
+- **Authorization header** — `Authorization: <token>` sem prefixo `Bearer`; token de sandbox ≠ token de produção
+- **Namespace de rota ≠ namespace Ruby** — `AutoSignature::Term` tem `resource_type = 'auto_signature_terms'` e `endpoint = '/auto_signature/terms'`; idem `AcceptanceTerm::Whatsapp`
+
 ## Comments
 
 - Use comentários apenas para o WHY não-óbvio de um trecho de código
