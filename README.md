@@ -5,7 +5,7 @@
 [![Ruby](https://img.shields.io/badge/ruby-%3E%3D%203.0-red)](https://www.ruby-lang.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](clicksign-ruby-sdk.gemspec)
 
-Cliente Ruby oficial para a [API v3 da Clicksign](https://developers.clicksign.com/) (JSON:API). Permite criar envelopes, adicionar documentos e signatários, configurar requisitos de assinatura, webhooks e demais recursos da plataforma com uma API idiomática em Ruby.
+Cliente Ruby não-oficial para a [API v3 da Clicksign](https://developers.clicksign.com/) (JSON:API). Permite criar envelopes, adicionar documentos e signatários, configurar requisitos de assinatura, webhooks e demais recursos da plataforma com uma API idiomática em Ruby.
 
 **Requisitos:** Ruby >= 3.0 · dependências de runtime: apenas biblioteca padrão (`net/http`, `json`).
 
